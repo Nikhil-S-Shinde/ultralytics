@@ -230,22 +230,42 @@ class BaseTrainer:
             self.lf = lambda x: max(1 - x / self.epochs, 0) * (1.0 - self.args.lrf) + self.args.lrf  # linear
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self.lf)
 
+    # def _setup_ddp(self, world_size):
+    #     """Initializes and sets the DistributedDataParallel parameters for training."""
+    #     torch.cuda.set_device(RANK)
+    #     self.device = torch.device("cuda", RANK)
+    #     # LOGGER.info(f'DDP info: RANK {RANK}, WORLD_SIZE {world_size}, DEVICE {self.device}')
+    #     os.environ["TORCH_NCCL_BLOCKING_WAIT"] = "1"  # set to enforce timeout
+    #     # dist.init_process_group(
+    #     #     backend="nccl" if dist.is_nccl_available() else "gloo",
+    #     #     timeout=timedelta(seconds=10800),  # 3 hours
+    #     #     rank=RANK,
+    #     #     world_size=world_size,
+    #     # )
+    #     dist.init_process_group(
+    #         backend="ddp_notebook",
+    #         timeout=timedelta(seconds=10800),  # 3 hours
+    #         rank=RANK,
+    #         world_size=world_size,
+    #     )
     def _setup_ddp(self, world_size):
         """Initializes and sets the DistributedDataParallel parameters for training."""
-        torch.cuda.set_device(RANK)
-        self.device = torch.device("cuda", RANK)
-        # LOGGER.info(f'DDP info: RANK {RANK}, WORLD_SIZE {world_size}, DEVICE {self.device}')
-        os.environ["TORCH_NCCL_BLOCKING_WAIT"] = "1"  # set to enforce timeout
-        # dist.init_process_group(
-        #     backend="nccl" if dist.is_nccl_available() else "gloo",
-        #     timeout=timedelta(seconds=10800),  # 3 hours
-        #     rank=RANK,
-        #     world_size=world_size,
-        # )
+        # Set RANK and LOCAL_RANK defaults for Kaggle
+        os.environ["RANK"] = os.environ.get("RANK", "0")  # Global rank
+        os.environ["LOCAL_RANK"] = os.environ.get("LOCAL_RANK", "0")  # Local rank
+    
+        # Set device based on LOCAL_RANK
+        local_rank = int(os.environ["LOCAL_RANK"])
+        torch.cuda.set_device(local_rank)
+        self.device = torch.device("cuda", local_rank)
+    
+        LOGGER.info(f"DDP info: RANK {os.environ['RANK']}, LOCAL_RANK {local_rank}, WORLD_SIZE {world_size}, DEVICE {self.device}")
+    
+        # Initialize process group with ddp_notebook backend
         dist.init_process_group(
             backend="ddp_notebook",
             timeout=timedelta(seconds=10800),  # 3 hours
-            rank=RANK,
+            rank=int(os.environ["RANK"]),
             world_size=world_size,
         )
 
