@@ -1,6 +1,8 @@
-path: /kaggle/input/dfire-yolo-1/data #root dir
+#path: /kaggle/input/dfire-yolo-1/data #root dir
+path: /kaggle/working/data #root dir
 train: images/train
 val: images/val
+test: images/test
 
 names:
     0: smoke
