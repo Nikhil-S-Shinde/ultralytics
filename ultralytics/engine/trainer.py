@@ -180,47 +180,32 @@ class BaseTrainer:
         else:  # i.e. device=None or device=''
             world_size = 0
 
-        # Run subprocess if DDP training, else train normally
-        # if world_size > 1 and "LOCAL_RANK" not in os.environ:
-        #     # Argument checks
-        #     if self.args.rect:
-        #         LOGGER.warning("WARNING ⚠️ 'rect=True' is incompatible with Multi-GPU training, setting 'rect=False'")
-        #         self.args.rect = False
-        #     if self.args.batch < 1.0:
-        #         LOGGER.warning(
-        #             "WARNING ⚠️ 'batch<1' for AutoBatch is incompatible with Multi-GPU training, setting "
-        #             "default 'batch=16'"
-        #         )
-        #         self.args.batch = 16
-
-        #     # Command
-        #     cmd, file = generate_ddp_command(world_size, self)
-        #     try:
-        #         LOGGER.info(f"{colorstr('DDP:')} debug command {' '.join(cmd)}")
-        #         subprocess.run(cmd, check=True)
-        #     except Exception as e:
-        #         raise e
-        #     finally:
-        #         ddp_cleanup(self, str(file))
-
-        # else:
-        #     self._do_train(world_size)
-
-
-    # Run subprocess if DDP training, else train normally
+        #Run subprocess if DDP training, else train normally
         if world_size > 1 and "LOCAL_RANK" not in os.environ:
-            LOGGER.info(f"{colorstr('DDP:')} Using ddp_notebook strategy for Kaggle.")
-            
-            # Force the environment variables for ddp_notebook
-            os.environ["RANK"] = "0"  # Global rank
-            os.environ["WORLD_SIZE"] = str(world_size)  # Total number of GPUs
-            os.environ["LOCAL_RANK"] = "0"  # Local rank for current process
-            
-            # NOTE: Directly call _do_train without launching subprocesses
-            self._do_train(world_size)
-        
+            # Argument checks
+            if self.args.rect:
+                LOGGER.warning("WARNING ⚠️ 'rect=True' is incompatible with Multi-GPU training, setting 'rect=False'")
+                self.args.rect = False
+            if self.args.batch < 1.0:
+                LOGGER.warning(
+                    "WARNING ⚠️ 'batch<1' for AutoBatch is incompatible with Multi-GPU training, setting "
+                    "default 'batch=16'"
+                )
+                self.args.batch = 16
+
+            # Command
+            cmd, file = generate_ddp_command(world_size, self)
+            try:
+                LOGGER.info(f"{colorstr('DDP:')} debug command {' '.join(cmd)}")
+                subprocess.run(cmd, check=True)
+            except Exception as e:
+                raise e
+            finally:
+                ddp_cleanup(self, str(file))
+
         else:
             self._do_train(world_size)
+
 
     def _setup_scheduler(self):
         """Initialize training learning rate scheduler."""
@@ -230,49 +215,18 @@ class BaseTrainer:
             self.lf = lambda x: max(1 - x / self.epochs, 0) * (1.0 - self.args.lrf) + self.args.lrf  # linear
         self.scheduler = optim.lr_scheduler.LambdaLR(self.optimizer, lr_lambda=self.lf)
 
-    # def _setup_ddp(self, world_size):
-    #     """Initializes and sets the DistributedDataParallel parameters for training."""
-    #     torch.cuda.set_device(RANK)
-    #     self.device = torch.device("cuda", RANK)
-    #     # LOGGER.info(f'DDP info: RANK {RANK}, WORLD_SIZE {world_size}, DEVICE {self.device}')
-    #     os.environ["TORCH_NCCL_BLOCKING_WAIT"] = "1"  # set to enforce timeout
-    #     # dist.init_process_group(
-    #     #     backend="nccl" if dist.is_nccl_available() else "gloo",
-    #     #     timeout=timedelta(seconds=10800),  # 3 hours
-    #     #     rank=RANK,
-    #     #     world_size=world_size,
-    #     # )
-    #     dist.init_process_group(
-    #         backend="ddp_notebook",
-    #         timeout=timedelta(seconds=10800),  # 3 hours
-    #         rank=RANK,
-    #         world_size=world_size,
-    #     )
     def _setup_ddp(self, world_size):
         """Initializes and sets the DistributedDataParallel parameters for training."""
-        # Set RANK and LOCAL_RANK defaults for Kaggle
-        os.environ["RANK"] = os.environ.get("RANK", "0")  # Global rank
-        os.environ["LOCAL_RANK"] = os.environ.get("LOCAL_RANK", "0")  # Local rank
-        
-        # Set MASTER_ADDR and MASTER_PORT for distributed training
-        os.environ["MASTER_ADDR"] = "127.0.0.1"  # localhost
-        os.environ["MASTER_PORT"] = "12355"  # Any free port (ensure it doesn't conflict)
-    
-        # Set device based on LOCAL_RANK
-        local_rank = int(os.environ["LOCAL_RANK"])
-        torch.cuda.set_device(local_rank)
-        self.device = torch.device("cuda", local_rank)
-    
-        LOGGER.info(f"DDP info: RANK {os.environ['RANK']}, LOCAL_RANK {local_rank}, WORLD_SIZE {world_size}, DEVICE {self.device}")
-    
-        # Initialize process group with ddp_notebook backend
+        torch.cuda.set_device(RANK)
+        self.device = torch.device("cuda", RANK)
+        # LOGGER.info(f'DDP info: RANK {RANK}, WORLD_SIZE {world_size}, DEVICE {self.device}')
+        os.environ["TORCH_NCCL_BLOCKING_WAIT"] = "1"  # set to enforce timeout
         dist.init_process_group(
-            backend="ddp_notebook",
+            backend="nccl" if dist.is_nccl_available() else "gloo",
             timeout=timedelta(seconds=10800),  # 3 hours
-            rank=int(os.environ["RANK"]),
+            rank=RANK,
             world_size=world_size,
         )
-
     def _setup_train(self, world_size):
         """Builds dataloaders and optimizer on correct rank process."""
         # Model
