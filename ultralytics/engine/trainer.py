@@ -181,28 +181,44 @@ class BaseTrainer:
             world_size = 0
 
         # Run subprocess if DDP training, else train normally
+        # if world_size > 1 and "LOCAL_RANK" not in os.environ:
+        #     # Argument checks
+        #     if self.args.rect:
+        #         LOGGER.warning("WARNING ⚠️ 'rect=True' is incompatible with Multi-GPU training, setting 'rect=False'")
+        #         self.args.rect = False
+        #     if self.args.batch < 1.0:
+        #         LOGGER.warning(
+        #             "WARNING ⚠️ 'batch<1' for AutoBatch is incompatible with Multi-GPU training, setting "
+        #             "default 'batch=16'"
+        #         )
+        #         self.args.batch = 16
+
+        #     # Command
+        #     cmd, file = generate_ddp_command(world_size, self)
+        #     try:
+        #         LOGGER.info(f"{colorstr('DDP:')} debug command {' '.join(cmd)}")
+        #         subprocess.run(cmd, check=True)
+        #     except Exception as e:
+        #         raise e
+        #     finally:
+        #         ddp_cleanup(self, str(file))
+
+        # else:
+        #     self._do_train(world_size)
+
+
+    # Run subprocess if DDP training, else train normally
         if world_size > 1 and "LOCAL_RANK" not in os.environ:
-            # Argument checks
-            if self.args.rect:
-                LOGGER.warning("WARNING ⚠️ 'rect=True' is incompatible with Multi-GPU training, setting 'rect=False'")
-                self.args.rect = False
-            if self.args.batch < 1.0:
-                LOGGER.warning(
-                    "WARNING ⚠️ 'batch<1' for AutoBatch is incompatible with Multi-GPU training, setting "
-                    "default 'batch=16'"
-                )
-                self.args.batch = 16
-
-            # Command
-            cmd, file = generate_ddp_command(world_size, self)
-            try:
-                LOGGER.info(f"{colorstr('DDP:')} debug command {' '.join(cmd)}")
-                subprocess.run(cmd, check=True)
-            except Exception as e:
-                raise e
-            finally:
-                ddp_cleanup(self, str(file))
-
+            LOGGER.info(f"{colorstr('DDP:')} Using ddp_notebook strategy for Kaggle.")
+            
+            # Force the environment variables for ddp_notebook
+            os.environ["RANK"] = "0"  # Global rank
+            os.environ["WORLD_SIZE"] = str(world_size)  # Total number of GPUs
+            os.environ["LOCAL_RANK"] = "0"  # Local rank for current process
+            
+            # NOTE: Directly call _do_train without launching subprocesses
+            self._do_train(world_size)
+        
         else:
             self._do_train(world_size)
 
@@ -227,7 +243,7 @@ class BaseTrainer:
         #     world_size=world_size,
         # )
         dist.init_process_group(
-            backend="gloo" if os.environ.get("KAGGLE_KERNEL_RUN_TYPE") else "ddp_notebook",
+            backend="ddp_notebook",
             timeout=timedelta(seconds=10800),  # 3 hours
             rank=RANK,
             world_size=world_size,
