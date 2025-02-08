@@ -253,6 +253,10 @@ class BaseTrainer:
         # Set RANK and LOCAL_RANK defaults for Kaggle
         os.environ["RANK"] = os.environ.get("RANK", "0")  # Global rank
         os.environ["LOCAL_RANK"] = os.environ.get("LOCAL_RANK", "0")  # Local rank
+        
+        # Set MASTER_ADDR and MASTER_PORT for distributed training
+        os.environ["MASTER_ADDR"] = "127.0.0.1"  # localhost
+        os.environ["MASTER_PORT"] = "12355"  # Any free port (ensure it doesn't conflict)
     
         # Set device based on LOCAL_RANK
         local_rank = int(os.environ["LOCAL_RANK"])
