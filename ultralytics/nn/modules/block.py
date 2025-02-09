@@ -1154,3 +1154,92 @@ class TorchVision(nn.Module):
         else:
             y = self.m(x)
         return y
+
+#####################################################################################################################################################################
+# --- Copied and adapted from https://github.com/d-li14/mobilenetv3.pytorch ---
+class Conv2d_BN(nn.Module):
+    def __init__(self, c1, c2, k, s, p, g=1, act=True):
+        super().__init__()
+        assert s in [1, 2]
+        self.conv = nn.Conv2d(c1, c2, k, s, p, groups=g, bias=False)
+        self.bn = nn.BatchNorm2d(c2)
+        self.act = nn.Hardswish() if act else nn.Identity()
+
+    def forward(self, x):
+        return self.act(self.bn(self.conv(x)))
+
+    def fuseforward(self, x):  # Corrected method name
+        return self.act(self.conv(x))
+
+
+class Block(nn.Module):
+    '''expand + depthwise + pointwise'''
+    def __init__(self, c1, c2, exp, k, s, se=False, act=True):
+        super().__init__()
+        self.use_res_connect = (s == 1 and c1 == c2)
+        self.use_se = se
+
+        self.conv1 = Conv2d_BN(c1, exp, 1, 1, 0, act=act)
+        self.conv2 = Conv2d_BN(exp, exp, k, s, (k - 1) // 2, g=exp, act=act)
+        if self.use_se:
+            self.se = nn.Sequential(
+                nn.AdaptiveAvgPool2d((1, 1)),
+                nn.Conv2d(exp, exp // 4, 1, 1, 0),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(exp // 4, exp, 1, 1, 0),
+                nn.Hardsigmoid()
+            )
+        self.conv3 = Conv2d_BN(exp, c2, 1, 1, 0, act=False)
+
+    def forward(self, x):
+        y = self.conv1(x)
+        y = self.conv2(y)
+        if self.use_se:
+            y = y * self.se(y)
+        y = self.conv3(y)
+        if self.use_res_connect:
+            y = y + x
+        return y
+
+class MobileNetV3Stem(nn.Module):
+    def __init__(self, c1, c2, k, s, p, act=True):
+        super().__init__()
+        self.conv = Conv2d_BN(c1, c2, k, s, p, act=act)
+
+    def forward(self, x):
+        return self.conv(x)
+
+class MobileNetV3Layer(nn.Module):
+    def __init__(self, c1, c2, exp, k, s, use_se, n, act=True, width_multiple=1.0, depth_multiple=1.0):
+        super().__init__()
+        # Apply width scaling
+        c1 = _make_divisible(c1 * width_multiple, 8)
+        c2 = _make_divisible(c2 * width_multiple, 8)
+        exp = _make_divisible(exp * width_multiple, 8)
+
+        # Apply depth scaling
+        n = max(1, int(n * depth_multiple)) # Ensure at least one block
+
+
+        blocks = [Block(c1, c2, exp, k, s, se=use_se, act=act)]
+        for _ in range(n - 1):
+            blocks.append(Block(c2, c2, exp, k, 1, se=use_se, act=act))
+        self.layer = nn.Sequential(*blocks)
+
+    def forward(self, x):
+        return self.layer(x)
+
+def _make_divisible(v, divisor, min_value=None):
+    """
+    This function is taken from the original tf repo.
+    It ensures that all layers have a channel number that is divisible by 8
+    It can be seen here:
+    https://github.com/tensorflow/models/blob/master/research/slim/nets/mobilenet/mobilenet.py
+    """
+    if min_value is None:
+        min_value = divisor
+    new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
+    # Make sure that round down does not go down by more than 10%.
+    if new_v < 0.9 * v:
+        new_v += divisor
+    return new_v
