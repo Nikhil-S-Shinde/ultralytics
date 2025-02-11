@@ -15,7 +15,7 @@ scales:
 # YOLOv8-MobileNetv3 Backbone
 backbone:
   # [from, repeats, module, args]
-  - [-1, 1, TorchVision, [960, mobilenet_v3_large, DEFAULT, True, 2, True]]  # 0 - MobileNetv3 (truncated, split)
+  - [-1, 1, TorchVision, [mobilenet_v3_large, DEFAULT, True, 2, True]]  # 0 - MobileNetv3 (truncated, split)
   # Extract feature maps at different scales (adjust indices based on MobileNetv3's structure)
   - [0, 1, Index, [40, 7]]                                                  # 1 - P3/8  (B, 80, 80, 40)
   - [0, 1, Index, [112, 13]]                                                 # 2 - P4/16 (B, 40, 40, 112)
