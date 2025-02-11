@@ -11,7 +11,7 @@ scales:
 
 backbone:
   # [from, repeats, module, args]
-  - [-1, 1, TorchVision, [1280, efficientnet_b3, NONE, True, 0, True]]  # 0 EfficientNetB3, unwrapped, no truncate, split
+  - [-1, 1, TorchVision, [1280, efficientnet_b3, DEFAULT, True, 0, True]]  # 0 EfficientNetB3, unwrapped, no truncate, split
 
   # Extract feature maps at different scales
   # EfficientNetB3 structure (approximate, based on typical torchvision output):
