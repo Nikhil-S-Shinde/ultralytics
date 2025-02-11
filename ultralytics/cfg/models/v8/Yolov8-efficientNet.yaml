@@ -52,6 +52,6 @@
 
 nc: 1
 backbone:
-  - [-1, 1, TorchVision, [960, "mobilenetv3_large", "DEFAULT", True, 2, True]]
+  - [-1, 1, TorchVision, [960, " mobilenet_v3_large", "DEFAULT", True, 2, True]]
 head:
   - [-1, 1, nn.Identity, []]
