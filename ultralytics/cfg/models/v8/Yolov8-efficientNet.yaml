@@ -52,6 +52,6 @@
 
 nc: 1
 backbone:
-  - [-1, 1, TorchVision, [768, "convnext_tiny", "DEFAULT", True, 2, False]]
+  - [-1, 1, TorchVision, [768, "convnext_tiny", "DEFAULT", True, 2, True]]
 head:
   - [-1, 1, nn.Identity, []]
