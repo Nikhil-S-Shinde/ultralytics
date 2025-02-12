@@ -8,9 +8,9 @@ backbone:
   - [-1, 1, Index, [960, 17]] #2
   # Swin track
   - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] #3
-  - [2, 1, Index, [768 ,9]] #4
+  - [-1, 1, Index, [768 ,9]] #4
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #5
-  - [[2,4], 1, Concat, [1]]  # 6 Concatenate along channel dimension
+  - [[2,5], 1, Concat, [1]]  # 6 Concatenate along channel dimension
 head:
   - [-1, 1, nn.Identity, []]
   
