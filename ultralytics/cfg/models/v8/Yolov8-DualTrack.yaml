@@ -25,6 +25,20 @@ backbone:
   - [[3, 10], 1, Concat, [1]] #15 concat scale 2
   - [[5, 13], 1, Concat, [1]] #16 concat scale 3
 head:
-  - []
-  - [-1, 1, nn.Identity, []]
+  - [16, 1, nn.Upsample, [None, 2, "nearest"]] #17 upsample 16 to match H and W with 15
+  - [[-1, 15], 1, Concat, [1]] # 18  17+15
+  - [-1, 1, C2f, [512]] #19
+  - [19, 1, nn.Upsample, [None, 2, "nearest"]] #20 upsample 19 to match H and W
+  - [[-1, 14], 1, Concat, [1]] # 21  20+14
+  - [-1, 1, C2f, [256]] #22
+  # Bottom-Up Pathway (from Scale 1 to Scale 3)
+  - [22, 1, Conv, [256, 3, 2]]    # 23: Downsample (256, 80, 80) -> (256, 40, 40)
+  - [[-1, 19], 1, Concat, [1]]   # 24: Concatenate with upsampled Scale 2 output (512, 40, 40) + (256, 40, 40) -> (768, 40, 40)
+  - [-1, 1, C2f, [512, True]]    # 25: C2f,  (768, 40, 40) -> (512, 40, 40) (P4/16-medium)
+
+  - [25, 1, Conv, [512, 3, 2]]    # 26: Downsample (512, 40, 40) -> (512, 20, 20)
+  - [[-1, 16], 1, Concat, [1]]   # 27: Concatenate with Scale 3 (1728, 20, 20) + (512, 20, 20) -> (2240, 20, 20)
+  - [-1, 1, C2f, [1024, True]]   # 28: C2f, (2240, 20, 20) -> (1024, 20, 20) (P5/32-large)
+  # - [-1, 1, nn.Identity, []]
+  - [[22, 25, 28], 1, Detect, [nc]]  # 29: Detect(P3, P4, P5)
   
