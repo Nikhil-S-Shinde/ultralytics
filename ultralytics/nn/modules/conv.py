@@ -348,7 +348,11 @@ class Index(nn.Module):
 
         Expects a list of tensors as input.
         """
-        return x[self.index]
+        print(f"Index input shape: {x.shape}")
+        # return x[self.index]
+        out = x[self.index]
+        print(f"Index output shape: {out.shape}")
+        return out
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, embed_dim, num_heads):
