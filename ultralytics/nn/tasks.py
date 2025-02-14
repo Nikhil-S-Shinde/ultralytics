@@ -1003,14 +1003,13 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         }
     )
     for i, (f, n, m, args) in enumerate(d["backbone"] + d["head"]):  # from, number, module, args
+        print(f"Parsing module: {m}")  # Debugging output
         m = (
             getattr(torch.nn, m[3:])
             if "nn." in m
             else getattr(__import__("torchvision").ops, m[16:])
             if "torchvision.ops." in m
-            else 
-                print(f"Parsing module: {m}")  # Debugging output
-                globals()[m]
+            else globals()[m]
             
         )  # get module
         for j, a in enumerate(args):
