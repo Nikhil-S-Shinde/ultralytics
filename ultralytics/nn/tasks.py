@@ -1054,11 +1054,18 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             if m in {Detect, Segment, Pose, OBB}:
                 m.legacy = legacy
         elif m is MultiHeadAttention:
-            print(f"MultiHeadAttention args before fix: {args}")  # Debug
-            embed_dim, num_heads = args  # Extract the correct args
-            m_ = m(embed_dim, num_heads)  # Initialize MultiHeadAttention properly
-            
-    print(f"MultiHeadAttention initialized with embed_dim={embed_dim}, num_heads={num_heads}")
+            print(f"MultiHeadAttention args before fix: {args}")  # Debugging print
+            # Ensure args are extracted properly
+            embed_dim, num_heads = args  # Assuming args contains [embed_dim, num_heads]
+            # Fetching the input layers for query, key, value
+            input_layers = [ch[x] for x in f]  # Get outputs of previous layers
+            if len(input_layers) != 3:
+                raise ValueError(f"MultiHeadAttention requires 3 inputs (query, key, value), but got {len(input_layers)}.")
+            print(f"MultiHeadAttention will receive inputs from layers: {f}")
+            # Initialize MultiHeadAttention module
+            m_ = m(embed_dim, num_heads)
+            # Store output channels
+            c2 = embed_dim  # Multi-head attention output will have the same embedding dimension
         elif m is RTDETRDecoder:  # special case, channels arg must be passed in index 1
             args.insert(1, [ch[x] for x in f])
         elif m is CBLinear:
