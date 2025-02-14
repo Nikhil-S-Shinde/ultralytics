@@ -1047,8 +1047,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c2 = sum(ch[x] for x in f)
         elif m is CrossAttention:
             # Special handling for CrossAttention
-            if not isinstance(f[0], list):
-                raise ValueError("CrossAttention requires a list of two input layers")
+            # if not isinstance(f[0], list):
+                # raise ValueError("CrossAttention requires a list of two input layers")
             
             # Get channels from both input layers
             q_channels = ch[f[0][0]]  # Query channels (first element of first sublist)
