@@ -398,12 +398,18 @@ class Index(nn.Module):
 #         # Layer normalization and residual connection
 #         out = self.norm(attn_output + q)  # Add residual connection for stability
 #         return out
-
 class CrossAttention(nn.Module):
     def __init__(self, dim_q, dim_kv, num_heads):
+        """
+        Args:
+            dim_q (int): Query dimension (Swin feature channels)
+            dim_kv (int): Key/Value dimension (CNN feature channels)
+            num_heads (int): Number of attention heads
+        """
         super().__init__()
-        # Project to same dimension for compatibility
-        self.proj_dim = dim_q  # Use query dimension as projection dimension
+        self.proj_dim = dim_q  # Use Swin dimension as projection dimension
+        
+        # Project CNN features to Swin dimension
         self.query_proj = nn.Linear(dim_q, self.proj_dim)
         self.key_proj = nn.Linear(dim_kv, self.proj_dim)
         self.value_proj = nn.Linear(dim_kv, self.proj_dim)
@@ -411,35 +417,48 @@ class CrossAttention(nn.Module):
         self.attention = nn.MultiheadAttention(
             embed_dim=self.proj_dim,
             num_heads=num_heads,
-            batch_first=True
+            batch_first=True,
+            dropout=0.1  # Add dropout for regularization
         )
         
-        # Add output projection
+        # Output projection and normalization
         self.output_proj = nn.Linear(self.proj_dim, dim_q)
-        self.norm1 = nn.LayerNorm(dim_q)
-        self.norm2 = nn.LayerNorm(dim_q)
+        self.norm_q = nn.LayerNorm(dim_q)
+        self.norm_kv = nn.LayerNorm(dim_kv)
         
     def forward(self, q, k):
+        """
+        Args:
+            q (torch.Tensor): Query tensor from Swin [B, C_q, H_q, W_q]
+            k (torch.Tensor): Key tensor from CNN [B, C_kv, H_kv, W_kv]
+        """
         residual = q
         
-        # Reshape and normalize
+        # Reshape tensors to [B, HW, C]
         B, C_q, H_q, W_q = q.shape
         B, C_kv, H_kv, W_kv = k.shape
         
-        q_flat = self.norm1(q.view(B, C_q, -1).permute(0, 2, 1))
-        k_flat = self.norm2(k.view(B, C_kv, -1).permute(0, 2, 1))
+        # Reshape and normalize
+        q_flat = q.view(B, C_q, -1).permute(0, 2, 1)  # [B, H_q*W_q, C_q]
+        k_flat = k.view(B, C_kv, -1).permute(0, 2, 1)  # [B, H_kv*W_kv, C_kv]
         
-        # Projections
-        q_proj = self.query_proj(q_flat)
-        k_proj = self.key_proj(k_flat)
-        v_proj = self.value_proj(k_flat)
+        # Apply layer normalization
+        q_norm = self.norm_q(q_flat)
+        k_norm = self.norm_kv(k_flat)
         
-        # Attention
+        # Project to common dimension
+        q_proj = self.query_proj(q_norm)    # [B, H_q*W_q, proj_dim]
+        k_proj = self.key_proj(k_norm)      # [B, H_kv*W_kv, proj_dim]
+        v_proj = self.value_proj(k_norm)    # [B, H_kv*W_kv, proj_dim]
+        
+        # Apply attention
         attn_output, _ = self.attention(q_proj, k_proj, v_proj)
         
-        # Output projection
+        # Project back to original query dimension
         output = self.output_proj(attn_output)
         
-        # Reshape and add residual
+        # Reshape back to feature map format [B, C_q, H_q, W_q]
         output = output.permute(0, 2, 1).view(B, C_q, H_q, W_q)
+        
+        # Add residual connection
         return output + residual
