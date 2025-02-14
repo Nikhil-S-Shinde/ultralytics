@@ -22,7 +22,7 @@ __all__ = (
     "Concat",
     "RepConv",
     "Index",
-    "MultiHeadAttention",
+    "CrossAttention",
 )
 
 
@@ -354,12 +354,52 @@ class Index(nn.Module):
         print("Index output shape:", out)
         return out
 
-class MultiHeadAttention(nn.Module):
-    def __init__(self, embed_dim, num_heads):
+class CrossAttention(nn.Module):
+    def __init__(self, cnn_dim, transformer_dim, attn_dim, num_heads):
+        """
+        Args:
+            cnn_dim (int): Number of channels in the CNN feature map.
+            transformer_dim (int): Number of channels in the Transformer feature map.
+            attn_dim (int): Embedding dimension for attention.
+            num_heads (int): Number of attention heads.
+        """
         super().__init__()
-        self.mha = nn.MultiheadAttention(embed_dim, num_heads)
+        self.cnn_proj = nn.Linear(cnn_dim, attn_dim)  # Project CNN features to attn_dim
+        self.transformer_proj = nn.Linear(transformer_dim, attn_dim)  # Project Transformer features to attn_dim
+        self.cross_attention = nn.MultiheadAttention(embed_dim=attn_dim, num_heads=num_heads, batch_first=False)  # Cross attention
+        self.output_proj = nn.Linear(attn_dim, cnn_dim)  # Project back to CNN dimension (optional)
 
-    def forward(self, inputs):
-        query, key, value = inputs  # Unpack list into three tensors
-        return self.mha(query, key, value)[0]  # Output attention result
+    def forward(self, cnn_features, transformer_features):
+        """
+        Args:
+            cnn_features (Tensor): CNN feature map of shape (B, C1, H, W).
+            transformer_features (Tensor): Transformer feature map of shape (B, C2, H, W).
+
+        Returns:
+            Tensor: Cross-attended feature map with shape (B, C1, H, W).
+        """
+        B, C1, H, W = cnn_features.shape
+        _, C2, _, _ = transformer_features.shape
+
+        # Step 1: Flatten spatial dimensions (HW) to create sequences
+        cnn_seq = cnn_features.view(B, C1, H * W).permute(2, 0, 1)  # (B, C1, H, W) -> (HW, B, C1)
+        transformer_seq = transformer_features.view(B, C2, H * W).permute(2, 0, 1)  # (B, C2, H, W) -> (HW, B, C2)
+
+        # Step 2: Project features to the same embedding dimension (attn_dim)
+        cnn_seq_proj = self.cnn_proj(cnn_seq)  # (HW, B, C1) -> (HW, B, attn_dim)
+        transformer_seq_proj = self.transformer_proj(transformer_seq)  # (HW, B, C2) -> (HW, B, attn_dim)
+
+        # Step 3: Apply cross-attention
+        attn_output, _ = self.cross_attention(query=transformer_seq_proj,  # Q
+                                               key=cnn_seq_proj,  # K
+                                               value=cnn_seq_proj)  # V
+        # Output shape: (HW, B, attn_dim)
+
+        # Step 4: Project back to original CNN dimension (C1)
+        attn_output_proj = self.output_proj(attn_output)  # (HW, B, attn_dim) -> (HW, B, C1)
+
+        # Step 5: Reshape back to (B, C1, H, W)
+        attn_output_final = attn_output_proj.permute(1, 2, 0).view(B, C1, H, W)  # (HW, B, C1) -> (B, C1, H, W)
+
+        return attn_output_final
 
