@@ -63,7 +63,7 @@ from ultralytics.nn.modules import (
     TorchVision,
     WorldDetect,
     v10Detect,
-    MultiHeadAttention
+    CrossAttention
 )
 from ultralytics.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, colorstr, emojis, yaml_load
 from ultralytics.utils.checks import check_requirements, check_suffix, check_yaml
@@ -1024,8 +1024,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             if m is C2fAttn:  # set 1) embed channels and 2) num heads
                 args[1] = make_divisible(min(args[1], max_channels // 2) * width, 8)
                 args[2] = int(max(round(min(args[2], max_channels // 2 // 32)) * width, 1) if args[2] > 1 else args[2])
-
-            args = [c1, c2, *args[1:]]
             if m in repeat_modules:
                 args.insert(2, n)  # number of repeats
                 n = 1
@@ -1047,25 +1045,41 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+        elif m is CrossAttention:
+            # Special handling for CrossAttention
+            if not isinstance(f[0], list):
+                raise ValueError("CrossAttention requires a list of two input layers")
+            
+            # Get channels from both input layers
+            q_channels = ch[f[0][0]]  # Query channels (first element of first sublist)
+            kv_channels = ch[f[0][1]]  # Key/Value channels (second element of first sublist)
+            
+            # args contains [dim_q, dim_kv, num_heads]
+            dim_q, dim_kv, num_heads = args
+            args = [q_channels, kv_channels, dim_q, dim_kv, num_heads]
+            
+            # Output channels will be dim_q
+            c2 = dim_q
+            
         elif m in frozenset({Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}):
             args.append([ch[x] for x in f])
             if m is Segment:
                 args[2] = make_divisible(min(args[2], max_channels) * width, 8)
             if m in {Detect, Segment, Pose, OBB}:
                 m.legacy = legacy
-        elif m is MultiHeadAttention:
-            print(f"MultiHeadAttention args before fix: {args}")  # Debugging print
-            # Ensure args are extracted properly
-            embed_dim, num_heads = args  # Assuming args contains [embed_dim, num_heads]
-            # Fetching the input layers for query, key, value
-            input_layers = [ch[x] for x in f]  # Get outputs of previous layers
-            if len(input_layers) != 3:
-                raise ValueError(f"MultiHeadAttention requires 3 inputs (query, key, value), but got {len(input_layers)}.")
-            print(f"MultiHeadAttention will receive inputs from layers: {f}")
-            # Initialize MultiHeadAttention module
-            m_ = m(embed_dim, num_heads)
-            # Store output channels
-            c2 = embed_dim  # Multi-head attention output will have the same embedding dimension
+        # elif m is MultiHeadAttention:
+        #     print(f"MultiHeadAttention args before fix: {args}")  # Debugging print
+        #     # Ensure args are extracted properly
+        #     embed_dim, num_heads = args  # Assuming args contains [embed_dim, num_heads]
+        #     # Fetching the input layers for query, key, value
+        #     input_layers = [ch[x] for x in f]  # Get outputs of previous layers
+        #     if len(input_layers) != 3:
+        #         raise ValueError(f"MultiHeadAttention requires 3 inputs (query, key, value), but got {len(input_layers)}.")
+        #     print(f"MultiHeadAttention will receive inputs from layers: {f}")
+        #     # Initialize MultiHeadAttention module
+        #     m_ = m(embed_dim, num_heads)
+        #     # Store output channels
+        #     c2 = embed_dim  # Multi-head attention output will have the same embedding dimension
         elif m is RTDETRDecoder:  # special case, channels arg must be passed in index 1
             args.insert(1, [ch[x] for x in f])
         elif m is CBLinear:
