@@ -44,7 +44,7 @@ backbone:
   - [-1, 1, torchvision.ops.Permute, [[2, 0, 1]]] # 22 Permute to get it into multi head attention acceptable format
 
   #Multi head attention (Output - (h*w, b, value_dims))
-  - [[16, 19, 22], 1, MultiHeadAttention, [64, 2, False]] #23
+  - [[16, 19, 22], 1, MultiHeadAttention, [64, 2, 0.0 False]] #23
 
   #post process
   - [23, 1, torchvision.ops.Permute, [[1, 2, 0]]] # 24 order (h*w, b, val_dim) to (b, val_dim, h*w)
