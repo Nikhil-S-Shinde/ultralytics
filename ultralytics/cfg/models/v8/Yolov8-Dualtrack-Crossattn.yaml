@@ -12,40 +12,64 @@ backbone:
   
   # CNN track
   - [0, 1, TorchVision, [960, mobilenet_v3_large, "DEFAULT", True, 2, True]]  # 1
-  - [-1, 1, Index, [40, 7]] #2 multiscale 1
-  - [1, 1, Index, [112, 13]] #3 multicale 2
+  - [-1, 1, Index, [40, 7]] #2 multiscale 1 (b, c, h, w)
+  - [1, 1, Index, [112, 13]] #3 multicale 2 (b, c, h, w)
   - [1, 1, Index, [960, 17]] #4
-  - [-1, 1, SPPF, [960, 5]] #5 multiscale 3
+  - [-1, 1, SPPF, [960, 5]] #5 multiscale 3 (b, c, h, w)
   
   # Swin track
   - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] #6
-  - [-1, 1, Index, [192 ,4]] #7
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #8 multiscale 1
+  - [-1, 1, Index, [192 ,4]] #7 (b, h, w, c)
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #8 multiscale 1 (b, c, h, w)
   - [6, 1, Index, [384, 6]] #9
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #10 multiscale 2
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #10 multiscale 2 (b, c, h, w)
   - [6, 1, Index, [768, 9]] #11
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #12
-  - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #12 
+  - [-1, 1, SPPF, [768, 5]] #13 multiscale 3 (b, c, h, w)
 
+  # cross attention
+  # transformer features - query
+  - [8, 1, nn.Conv2d, [192, 64, 1, 1, 0]] # 14 Projection. embed dims - 64
+  - [-1, 1, nn.Flatten, [2, -1]] # 15 reshape (b, embed_dim, h, w) to (b, embed_dim, h*w)
+  - [-1, 1, torch.ops.Permute, [[2, 0, 1]]] # 16 Permute to get it into multi head attention acceptable format (seq, b, embed_dim)
+  
+  # CNN features - key
+  - [2, 1, nn.Conv2d, [40, 64, 1, 1, 0]] # 17 Projection. embed dims - 64
+  - [-1, 1, nn.Flatten, [2, -1]] # 18 reshape (b, embed_dim, h, w) to (b, embed_dim, h*w)
+  - [-1, 1, torch.ops.Permute, [[2, 0, 1]]] # 19 Permute to get it into multi head attention acceptable format
+  
+  #CNN features - value
+  - [2, 1, nn.Conv2d, [40, 64, 1, 1, 0]] # 20 Projection. value dims - 64
+  - [-1, 1, nn.Flatten, [2, -1]] # 21 reshape (b, value_dim, h, w) to (b, value_dim, h*w)
+  - [-1, 1, torch.ops.Permute, [[2, 0, 1]]] # 22 Permute to get it into multi head attention acceptable format
+
+  #Multi head attention (Output - (h*w, b, value_dims))
+  - [[16, 19, 22], 1, nn.MultiheadAttention, [64, 2]] #23
+
+  #post process
+  - [23, 1, torch.ops.Permute, [[1, 2, 0]]] # 24 order (h*w, b, val_dim) to (b, val_dim, h*w)
+  - [-1, 1, nn.Unflatten, [2, (80, 80)]] # 25 bring back spatial dims (b, val_dims, h*w) -> (b, val_dims, h, w) ENSURE SHAPE
+  
   # Concat features along channel dimension
-  - [[2, 8], 1, Concat, [1]] # 14 concat scale 1
-  - [[3, 10], 1, Concat, [1]] #15 concat scale 2
-  - [[5, 13], 1, Concat, [1]] #16 concat scale 3
+  - [[8, 25], 1, Concat, [1]] # 26
+  # - [[2, 8], 1, Concat, [1]] # 24 concat scale 1
+  - [[3, 10], 1, Concat, [1]] #27 concat scale 2
+  - [[5, 13], 1, Concat, [1]] #28 concat scale 3
 head:
-  - [16, 1, nn.Upsample, [None, 2, "nearest"]] #17 upsample 16 to match H and W with 15
-  - [[-1, 15], 1, Concat, [1]] # 18  17+15
-  - [-1, 1, C2f, [512]] #19
-  - [19, 1, nn.Upsample, [None, 2, "nearest"]] #20 upsample 19 to match H and W
-  - [[-1, 14], 1, Concat, [1]] # 21  20+14
-  - [-1, 1, C2f, [256]] #22
+  - [28, 1, nn.Upsample, [None, 2, "nearest"]] #29 upsample 16 to match H and W with 25
+  - [[-1, 27], 1, Concat, [1]] # 30  27+25
+  - [-1, 1, C2f, [512]] # 31
+  - [31, 1, nn.Upsample, [None, 2, "nearest"]] #32 upsample 29 to match H and W
+  - [[-1, 26], 1, Concat, [1]] # 33  30+24
+  - [-1, 1, C2f, [256]] #34
   # Bottom-Up Pathway (from Scale 1 to Scale 3)
-  - [22, 1, Conv, [256, 3, 2]]    # 23: Downsample (256, 80, 80) -> (256, 40, 40)
-  - [[-1, 19], 1, Concat, [1]]   # 24: Concatenate with upsampled Scale 2 output (512, 40, 40) + (256, 40, 40) -> (768, 40, 40)
-  - [-1, 1, C2f, [512, True]]    # 25: C2f,  (768, 40, 40) -> (512, 40, 40) (P4/16-medium)
+  - [34, 1, Conv, [256, 3, 2]]    # 35: Downsample (256, 80, 80) -> (256, 40, 40)
+  - [[-1, 31], 1, Concat, [1]]   # 36: Concatenate with upsampled Scale 2 output (512, 40, 40) + (256, 40, 40) -> (768, 40, 40)
+  - [-1, 1, C2f, [512, True]]    # 37: C2f,  (768, 40, 40) -> (512, 40, 40) (P4/16-medium)
 
-  - [25, 1, Conv, [512, 3, 2]]    # 26: Downsample (512, 40, 40) -> (512, 20, 20)
-  - [[-1, 16], 1, Concat, [1]]   # 27: Concatenate with Scale 3 (1728, 20, 20) + (512, 20, 20) -> (2240, 20, 20)
-  - [-1, 1, C2f, [1024, True]]   # 28: C2f, (2240, 20, 20) -> (1024, 20, 20) (P5/32-large)
+  - [37, 1, Conv, [512, 3, 2]]    # 38: Downsample (512, 40, 40) -> (512, 20, 20)
+  - [[-1, 28], 1, Concat, [1]]   # 39: Concatenate with Scale 3 (1728, 20, 20) + (512, 20, 20) -> (2240, 20, 20)
+  - [-1, 1, C2f, [1024, True]]   # 40: C2f, (2240, 20, 20) -> (1024, 20, 20) (P5/32-large)
   # - [-1, 1, nn.Identity, []]
-  - [[22, 25, 28], 1, Detect, [nc]]  # 29: Detect(P3, P4, P5)
+  - [[34, 37, 40], 1, Detect, [nc]]  # 41: Detect(P3, P4, P5)
   
