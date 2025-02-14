@@ -354,48 +354,92 @@ class Index(nn.Module):
         print("Index output shape:", out)
         return out
 
+# class CrossAttention(nn.Module):
+#     def __init__(self, dim_q, dim_kv, num_heads):
+#         super().__init__()
+#         # Linear projections for query, key, and value
+#         self.query_proj = nn.Linear(dim_q, dim_q)
+#         self.key_proj = nn.Linear(dim_kv, dim_kv)
+#         self.value_proj = nn.Linear(dim_kv, dim_kv)
+        
+#         # Multihead attention
+#         self.attention = nn.MultiheadAttention(
+#             embed_dim=dim_q,  # Query dimension
+#             num_heads=num_heads,  # Number of attention heads
+#             batch_first=True  # Use batch as the first dimension
+#         )
+        
+#         # Layer normalization
+#         self.norm = nn.LayerNorm(dim_q)
+
+#     def forward(self, q, k):
+#         # q (query): Swin Transformer features [B, C_q, H_q, W_q]
+#         # k (key/value): CNN features [B, C_kv, H_kv, W_kv]
+        
+#         # Reshape tensors from (B, C, H, W) -> (B, HW, C)
+#         B, C_q, H_q, W_q = q.shape
+#         B, C_kv, H_kv, W_kv = k.shape
+        
+#         q_flat = q.view(B, C_q, -1).permute(0, 2, 1)  # (B, HW_q, C_q)
+#         k_flat = k.view(B, C_kv, -1).permute(0, 2, 1)  # (B, HW_kv, C_kv)
+#         v_flat = k_flat  # Value is the same as Key
+
+#         # Project query, key, and value
+#         q_proj = self.query_proj(q_flat)  # (B, HW_q, C_q)
+#         k_proj = self.key_proj(k_flat)   # (B, HW_kv, C_kv)
+#         v_proj = self.value_proj(v_flat)  # (B, HW_kv, C_kv)
+
+#         # Apply multihead attention
+#         attn_output, _ = self.attention(q_proj, k_proj, v_proj)  # (B, HW_q, C_q)
+
+#         # Reshape back to (B, C_q, H_q, W_q)
+#         attn_output = attn_output.permute(0, 2, 1).view(B, C_q, H_q, W_q)
+
+#         # Layer normalization and residual connection
+#         out = self.norm(attn_output + q)  # Add residual connection for stability
+#         return out
+
 class CrossAttention(nn.Module):
     def __init__(self, dim_q, dim_kv, num_heads):
         super().__init__()
-        # Linear projections for query, key, and value
-        self.query_proj = nn.Linear(dim_q, dim_q)
-        self.key_proj = nn.Linear(dim_kv, dim_kv)
-        self.value_proj = nn.Linear(dim_kv, dim_kv)
+        # Project to same dimension for compatibility
+        self.proj_dim = dim_q  # Use query dimension as projection dimension
+        self.query_proj = nn.Linear(dim_q, self.proj_dim)
+        self.key_proj = nn.Linear(dim_kv, self.proj_dim)
+        self.value_proj = nn.Linear(dim_kv, self.proj_dim)
         
-        # Multihead attention
         self.attention = nn.MultiheadAttention(
-            embed_dim=dim_q,  # Query dimension
-            num_heads=num_heads,  # Number of attention heads
-            batch_first=True  # Use batch as the first dimension
+            embed_dim=self.proj_dim,
+            num_heads=num_heads,
+            batch_first=True
         )
         
-        # Layer normalization
-        self.norm = nn.LayerNorm(dim_q)
-
-    def forward(self, q, k):
-        # q (query): Swin Transformer features [B, C_q, H_q, W_q]
-        # k (key/value): CNN features [B, C_kv, H_kv, W_kv]
+        # Add output projection
+        self.output_proj = nn.Linear(self.proj_dim, dim_q)
+        self.norm1 = nn.LayerNorm(dim_q)
+        self.norm2 = nn.LayerNorm(dim_q)
         
-        # Reshape tensors from (B, C, H, W) -> (B, HW, C)
+    def forward(self, q, k):
+        residual = q
+        
+        # Reshape and normalize
         B, C_q, H_q, W_q = q.shape
         B, C_kv, H_kv, W_kv = k.shape
         
-        q_flat = q.view(B, C_q, -1).permute(0, 2, 1)  # (B, HW_q, C_q)
-        k_flat = k.view(B, C_kv, -1).permute(0, 2, 1)  # (B, HW_kv, C_kv)
-        v_flat = k_flat  # Value is the same as Key
-
-        # Project query, key, and value
-        q_proj = self.query_proj(q_flat)  # (B, HW_q, C_q)
-        k_proj = self.key_proj(k_flat)   # (B, HW_kv, C_kv)
-        v_proj = self.value_proj(v_flat)  # (B, HW_kv, C_kv)
-
-        # Apply multihead attention
-        attn_output, _ = self.attention(q_proj, k_proj, v_proj)  # (B, HW_q, C_q)
-
-        # Reshape back to (B, C_q, H_q, W_q)
-        attn_output = attn_output.permute(0, 2, 1).view(B, C_q, H_q, W_q)
-
-        # Layer normalization and residual connection
-        out = self.norm(attn_output + q)  # Add residual connection for stability
-        return out
-
+        q_flat = self.norm1(q.view(B, C_q, -1).permute(0, 2, 1))
+        k_flat = self.norm2(k.view(B, C_kv, -1).permute(0, 2, 1))
+        
+        # Projections
+        q_proj = self.query_proj(q_flat)
+        k_proj = self.key_proj(k_flat)
+        v_proj = self.value_proj(k_flat)
+        
+        # Attention
+        attn_output, _ = self.attention(q_proj, k_proj, v_proj)
+        
+        # Output projection
+        output = self.output_proj(attn_output)
+        
+        # Reshape and add residual
+        output = output.permute(0, 2, 1).view(B, C_q, H_q, W_q)
+        return output + residual
