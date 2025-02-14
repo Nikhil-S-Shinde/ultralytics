@@ -48,7 +48,7 @@ backbone:
 
   #post process
   - [23, 1, torchvision.ops.Permute, [[1, 2, 0]]] # 24 order (h*w, b, val_dim) to (b, val_dim, h*w)
-  - [-1, 1, nn.Unflatten, [2, (80, 80)]] # 25 bring back spatial dims (b, val_dims, h*w) -> (b, val_dims, h, w) ENSURE SHAPE
+  - [-1, 1, nn.Unflatten, [2, [80, 80]]] # 25 bring back spatial dims (b, val_dims, h*w) -> (b, val_dims, h, w) ENSURE SHAPE
   
   # Concat features along channel dimension
   - [[8, 25], 1, Concat, [1]] # 26
