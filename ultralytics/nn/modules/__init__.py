@@ -73,7 +73,7 @@ from .conv import (
     LightConv,
     RepConv,
     SpatialAttention,
-    MultiHeadAttention,
+    CrossAttention,
 )
 from .head import OBB, Classify, Detect, Pose, RTDETRDecoder, Segment, WorldDetect, v10Detect
 from .transformer import (
@@ -161,5 +161,5 @@ __all__ = (
     "PSA",
     "TorchVision",
     "Index",
-    "MultiHeadAttention",
+    "CrossAttention",
 )
