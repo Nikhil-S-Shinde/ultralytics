@@ -1,0 +1,53 @@
+# Custom YOLOv8 Model with Cross-Attention
+nc: 2  # Number of classes
+scales:
+  s: [0.33, 0.50, 1024]  # YOLOv8s scaling constants
+backbone:
+  # CNN track
+  - [0, 1, TorchVision, [960, mobilenet_v3_large, "DEFAULT", True, 2, True]]  # 1: CNN backbone
+  - [-1, 1, Index, [40, 7]]  # 2: Multiscale 1 from CNN
+  - [1, 1, Index, [112, 13]]  # 3: Multiscale 2 from CNN
+  - [1, 1, Index, [960, 17]]  # 4: Multiscale 3 from CNN
+  - [-1, 1, SPPF, [960, 5]]  # 5: SPPF for CNN multiscale 3
+
+  # Swin track
+  - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]]  # 6: Swin Transformer backbone
+  - [-1, 1, Index, [192, 4]]  # 7: Multiscale 1 from Swin
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 8: Permute Swin multiscale 1
+  - [6, 1, Index, [384, 6]]  # 9: Multiscale 2 from Swin
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 10: Permute Swin multiscale 2
+  - [6, 1, Index, [768, 9]]  # 11: Multiscale 3 from Swin
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 12: Permute Swin multiscale 3
+  - [-1, 1, SPPF, [768, 5]]  # 13: SPPF for Swin multiscale 3
+
+  # Cross-Attention Layers
+  - [[2, 8], 1, CrossAttention, [192, 40, 4]]  # 14: Cross attention at scale 1 (Swin -> CNN)
+  - [[3, 10], 1, CrossAttention, [384, 112, 8]]  # 15: Cross attention at scale 2 (Swin -> CNN)
+  - [[5, 13], 1, CrossAttention, [768, 960, 16]]  # 16: Cross attention at scale 3 (Swin -> CNN)
+
+  # Concatenate features along channel dimension
+  - [[14, 8], 1, Concat, [1]]  # 17: Concat scale 1 (Cross-attended Swin + CNN)
+  - [[15, 10], 1, Concat, [1]]  # 18: Concat scale 2 (Cross-attended Swin + CNN)
+  - [[16, 13], 1, Concat, [1]]  # 19: Concat scale 3 (Cross-attended Swin + CNN)
+
+head:
+  # Top-Down Pathway
+  - [19, 1, nn.Upsample, [None, 2, "nearest"]]  # 20: Upsample scale 3 to match scale 2
+  - [[-1, 18], 1, Concat, [1]]  # 21: Concat scale 2 + upsampled scale 3
+  - [-1, 1, C2f, [512]]  # 22: C2f for scale 2
+
+  - [22, 1, nn.Upsample, [None, 2, "nearest"]]  # 23: Upsample scale 2 to match scale 1
+  - [[-1, 17], 1, Concat, [1]]  # 24: Concat scale 1 + upsampled scale 2
+  - [-1, 1, C2f, [256]]  # 25: C2f for scale 1
+
+  # Bottom-Up Pathway (from Scale 1 to Scale 3)
+  - [25, 1, Conv, [256, 3, 2]]  # 26: Downsample scale 1 to match scale 2
+  - [[-1, 22], 1, Concat, [1]]  # 27: Concat scale 2 + downsampled scale 1
+  - [-1, 1, C2f, [512, True]]  # 28: C2f for scale 2 (P4/16-medium)
+
+  - [28, 1, Conv, [512, 3, 2]]  # 29: Downsample scale 2 to match scale 3
+  - [[-1, 19], 1, Concat, [1]]  # 30: Concat scale 3 + downsampled scale 2
+  - [-1, 1, C2f, [1024, True]]  # 31: C2f for scale 3 (P5/32-large)
+
+  # Detection layer
+  - [[25, 28, 31], 1, Detect, [nc]]  # 32: Detect at P3, P4, P5
