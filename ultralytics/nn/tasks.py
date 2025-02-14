@@ -1056,7 +1056,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             
             # args contains [dim_q, dim_kv, num_heads]
             dim_q, dim_kv, num_heads = args
-            args = [q_channels, kv_channels, dim_q, dim_kv, num_heads]
+            # args = [q_channels, kv_channels, dim_q, dim_kv, num_heads]
+            args = [dim_q, dim_kv, num_heads]
             
             # Output channels will be dim_q
             c2 = dim_q
