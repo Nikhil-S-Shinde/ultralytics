@@ -348,11 +348,7 @@ class Index(nn.Module):
 
         Expects a list of tensors as input.
         """
-        print("Index input shape", x)
-        # return x[self.index]
-        out = x[self.index]
-        print("Index output shape:", out)
-        return out
+        return x[self.index]
 
 # class CrossAttention(nn.Module):
 #     def __init__(self, dim_q, dim_kv, num_heads):
