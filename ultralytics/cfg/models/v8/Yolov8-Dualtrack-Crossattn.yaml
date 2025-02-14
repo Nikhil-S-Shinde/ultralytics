@@ -31,23 +31,23 @@ backbone:
   # transformer features - query
   - [8, 1, nn.Conv2d, [192, 64, 1, 1, 0]] # 14 Projection. embed dims - 64
   - [-1, 1, nn.Flatten, [2, -1]] # 15 reshape (b, embed_dim, h, w) to (b, embed_dim, h*w)
-  - [-1, 1, torch.ops.Permute, [[2, 0, 1]]] # 16 Permute to get it into multi head attention acceptable format (seq, b, embed_dim)
+  - [-1, 1, torchvision.ops.Permute, [[2, 0, 1]]] # 16 Permute to get it into multi head attention acceptable format (seq, b, embed_dim)
   
   # CNN features - key
   - [2, 1, nn.Conv2d, [40, 64, 1, 1, 0]] # 17 Projection. embed dims - 64
   - [-1, 1, nn.Flatten, [2, -1]] # 18 reshape (b, embed_dim, h, w) to (b, embed_dim, h*w)
-  - [-1, 1, torch.ops.Permute, [[2, 0, 1]]] # 19 Permute to get it into multi head attention acceptable format
+  - [-1, 1, torchvision.ops.Permute, [[2, 0, 1]]] # 19 Permute to get it into multi head attention acceptable format
   
   #CNN features - value
   - [2, 1, nn.Conv2d, [40, 64, 1, 1, 0]] # 20 Projection. value dims - 64
   - [-1, 1, nn.Flatten, [2, -1]] # 21 reshape (b, value_dim, h, w) to (b, value_dim, h*w)
-  - [-1, 1, torch.ops.Permute, [[2, 0, 1]]] # 22 Permute to get it into multi head attention acceptable format
+  - [-1, 1, torchvision.ops.Permute, [[2, 0, 1]]] # 22 Permute to get it into multi head attention acceptable format
 
   #Multi head attention (Output - (h*w, b, value_dims))
   - [[16, 19, 22], 1, nn.MultiheadAttention, [64, 2]] #23
 
   #post process
-  - [23, 1, torch.ops.Permute, [[1, 2, 0]]] # 24 order (h*w, b, val_dim) to (b, val_dim, h*w)
+  - [23, 1, torchvision.ops.Permute, [[1, 2, 0]]] # 24 order (h*w, b, val_dim) to (b, val_dim, h*w)
   - [-1, 1, nn.Unflatten, [2, (80, 80)]] # 25 bring back spatial dims (b, val_dims, h*w) -> (b, val_dims, h, w) ENSURE SHAPE
   
   # Concat features along channel dimension
