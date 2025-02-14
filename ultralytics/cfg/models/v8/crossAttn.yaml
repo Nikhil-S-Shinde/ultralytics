@@ -3,6 +3,7 @@ nc: 2  # Number of classes
 scales:
   s: [0.33, 0.50, 1024]  # YOLOv8s scaling constants
 backbone:
+  - [-1, 1, nn.Identity, []] #0
   # CNN track
   - [0, 1, TorchVision, [960, mobilenet_v3_large, "DEFAULT", True, 2, True]]  # 1: CNN backbone
   - [-1, 1, Index, [40, 7]]  # 2: Multiscale 1 from CNN
