@@ -355,51 +355,47 @@ class Index(nn.Module):
         return out
 
 class CrossAttention(nn.Module):
-    def __init__(self, cnn_dim, transformer_dim, attn_dim, num_heads):
-        """
-        Args:
-            cnn_dim (int): Number of channels in the CNN feature map.
-            transformer_dim (int): Number of channels in the Transformer feature map.
-            attn_dim (int): Embedding dimension for attention.
-            num_heads (int): Number of attention heads.
-        """
+    def __init__(self, dim_q, dim_kv, num_heads):
         super().__init__()
-        self.cnn_proj = nn.Linear(cnn_dim, attn_dim)  # Project CNN features to attn_dim
-        self.transformer_proj = nn.Linear(transformer_dim, attn_dim)  # Project Transformer features to attn_dim
-        self.cross_attention = nn.MultiheadAttention(embed_dim=attn_dim, num_heads=num_heads, batch_first=False)  # Cross attention
-        self.output_proj = nn.Linear(attn_dim, cnn_dim)  # Project back to CNN dimension (optional)
+        # Linear projections for query, key, and value
+        self.query_proj = nn.Linear(dim_q, dim_q)
+        self.key_proj = nn.Linear(dim_kv, dim_kv)
+        self.value_proj = nn.Linear(dim_kv, dim_kv)
+        
+        # Multihead attention
+        self.attention = nn.MultiheadAttention(
+            embed_dim=dim_q,  # Query dimension
+            num_heads=num_heads,  # Number of attention heads
+            batch_first=True  # Use batch as the first dimension
+        )
+        
+        # Layer normalization
+        self.norm = nn.LayerNorm(dim_q)
 
-    def forward(self, cnn_features, transformer_features):
-        """
-        Args:
-            cnn_features (Tensor): CNN feature map of shape (B, C1, H, W).
-            transformer_features (Tensor): Transformer feature map of shape (B, C2, H, W).
+    def forward(self, q, k):
+        # q (query): Swin Transformer features [B, C_q, H_q, W_q]
+        # k (key/value): CNN features [B, C_kv, H_kv, W_kv]
+        
+        # Reshape tensors from (B, C, H, W) -> (B, HW, C)
+        B, C_q, H_q, W_q = q.shape
+        B, C_kv, H_kv, W_kv = k.shape
+        
+        q_flat = q.view(B, C_q, -1).permute(0, 2, 1)  # (B, HW_q, C_q)
+        k_flat = k.view(B, C_kv, -1).permute(0, 2, 1)  # (B, HW_kv, C_kv)
+        v_flat = k_flat  # Value is the same as Key
 
-        Returns:
-            Tensor: Cross-attended feature map with shape (B, C1, H, W).
-        """
-        B, C1, H, W = cnn_features.shape
-        _, C2, _, _ = transformer_features.shape
+        # Project query, key, and value
+        q_proj = self.query_proj(q_flat)  # (B, HW_q, C_q)
+        k_proj = self.key_proj(k_flat)   # (B, HW_kv, C_kv)
+        v_proj = self.value_proj(v_flat)  # (B, HW_kv, C_kv)
 
-        # Step 1: Flatten spatial dimensions (HW) to create sequences
-        cnn_seq = cnn_features.view(B, C1, H * W).permute(2, 0, 1)  # (B, C1, H, W) -> (HW, B, C1)
-        transformer_seq = transformer_features.view(B, C2, H * W).permute(2, 0, 1)  # (B, C2, H, W) -> (HW, B, C2)
+        # Apply multihead attention
+        attn_output, _ = self.attention(q_proj, k_proj, v_proj)  # (B, HW_q, C_q)
 
-        # Step 2: Project features to the same embedding dimension (attn_dim)
-        cnn_seq_proj = self.cnn_proj(cnn_seq)  # (HW, B, C1) -> (HW, B, attn_dim)
-        transformer_seq_proj = self.transformer_proj(transformer_seq)  # (HW, B, C2) -> (HW, B, attn_dim)
+        # Reshape back to (B, C_q, H_q, W_q)
+        attn_output = attn_output.permute(0, 2, 1).view(B, C_q, H_q, W_q)
 
-        # Step 3: Apply cross-attention
-        attn_output, _ = self.cross_attention(query=transformer_seq_proj,  # Q
-                                               key=cnn_seq_proj,  # K
-                                               value=cnn_seq_proj)  # V
-        # Output shape: (HW, B, attn_dim)
-
-        # Step 4: Project back to original CNN dimension (C1)
-        attn_output_proj = self.output_proj(attn_output)  # (HW, B, attn_dim) -> (HW, B, C1)
-
-        # Step 5: Reshape back to (B, C1, H, W)
-        attn_output_final = attn_output_proj.permute(1, 2, 0).view(B, C1, H, W)  # (HW, B, C1) -> (B, C1, H, W)
-
-        return attn_output_final
+        # Layer normalization and residual connection
+        out = self.norm(attn_output + q)  # Add residual connection for stability
+        return out
 
