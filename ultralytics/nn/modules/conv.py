@@ -348,10 +348,10 @@ class Index(nn.Module):
 
         Expects a list of tensors as input.
         """
-        print(f"Index input shape: {x.shape}")
+        print("Index input shape", x)
         # return x[self.index]
         out = x[self.index]
-        print(f"Index output shape: {out.shape}")
+        print("Index output shape:", out)
         return out
 
 class MultiHeadAttention(nn.Module):
