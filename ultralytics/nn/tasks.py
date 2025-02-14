@@ -1054,8 +1054,11 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             if m in {Detect, Segment, Pose, OBB}:
                 m.legacy = legacy
         elif m is MultiHeadAttention:
-            print(f"MultiHeadAttention args: {args}")
-            args.insert(0, [ch[x] for x in f])
+            print(f"MultiHeadAttention args before fix: {args}")  # Debug
+            embed_dim, num_heads = args  # Extract the correct args
+            m_ = m(embed_dim, num_heads)  # Initialize MultiHeadAttention properly
+            
+    print(f"MultiHeadAttention initialized with embed_dim={embed_dim}, num_heads={num_heads}")
         elif m is RTDETRDecoder:  # special case, channels arg must be passed in index 1
             args.insert(1, [ch[x] for x in f])
         elif m is CBLinear:
