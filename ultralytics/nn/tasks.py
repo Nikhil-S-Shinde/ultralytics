@@ -1051,16 +1051,17 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 # raise ValueError("CrossAttention requires a list of two input layers")
             
             # Get channels from both input layers
-            q_channels = ch[f[0][0]]  # Query channels (first element of first sublist)
-            kv_channels = ch[f[0][1]]  # Key/Value channels (second element of first sublist)
+            # q_channels = ch[f[0][0]]  # Query channels (first element of first sublist)
+            # kv_channels = ch[f[0][1]]  # Key/Value channels (second element of first sublist)
             
             # args contains [dim_q, dim_kv, num_heads]
-            dim_q, dim_kv, num_heads = args
+            # dim_q, dim_kv, num_heads = args
             # args = [q_channels, kv_channels, dim_q, dim_kv, num_heads]
-            args = [dim_q, dim_kv, num_heads]
+            # args = [dim_q, dim_kv, num_heads]
             
             # Output channels will be dim_q
-            c2 = dim_q
+            # c2 = dim_q
+            c2 = args[0]
             
         elif m in frozenset({Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}):
             args.append([ch[x] for x in f])
