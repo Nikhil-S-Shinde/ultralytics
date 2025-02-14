@@ -22,6 +22,7 @@ __all__ = (
     "Concat",
     "RepConv",
     "Index",
+    "MultiHeadAttention",
 )
 
 
@@ -348,3 +349,13 @@ class Index(nn.Module):
         Expects a list of tensors as input.
         """
         return x[self.index]
+
+class MultiHeadAttention(nn.Module):
+    def __init__(self, embed_dim, num_heads):
+        super().__init__()
+        self.mha = nn.MultiheadAttention(embed_dim, num_heads)
+
+    def forward(self, inputs):
+        query, key, value = inputs  # Unpack list into three tensors
+        return self.mha(query, key, value)[0]  # Output attention result
+
