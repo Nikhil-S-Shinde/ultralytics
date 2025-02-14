@@ -1008,7 +1008,10 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             if "nn." in m
             else getattr(__import__("torchvision").ops, m[16:])
             if "torchvision.ops." in m
-            else globals()[m]
+            else 
+                print(f"Parsing module: {m}")  # Debugging output
+                globals()[m]
+            
         )  # get module
         for j, a in enumerate(args):
             if isinstance(a, str):
