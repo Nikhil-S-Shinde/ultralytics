@@ -1061,6 +1061,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             
             # Output channels will be dim_q
             # c2 = dim_q
+            print(f"CrossAttention f:", f, "type:", type(f), "type of first element:", type(f[0]))
             c2 = args[0]
             
         elif m in frozenset({Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}):
