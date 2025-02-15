@@ -395,34 +395,29 @@ class Index(nn.Module):
 #         out = self.norm(attn_output + q)  # Add residual connection for stability
 #         return out
 class CrossAttention(nn.Module):
-    def __init__(self, dim_q, dim_kv, num_heads, device='cpu'): #add device in parameters
-        """
-        Args:
-            dim_q (int): Query dimension (Swin feature channels)
-            dim_kv (int): Key/Value dimension (CNN feature channels)
-            num_heads (int): Number of attention heads
-        """
+    def __init__(self, dim_q, dim_kv, num_heads, device='cpu'):
         super().__init__()
-        self.proj_dim = dim_q  # Use Swin dimension as projection dimension
-
-        # Project CNN features to Swin dimension
-        self.query_proj = nn.Linear(dim_q, self.proj_dim, device=device) #pass device to nn.Linear
-        self.key_proj = nn.Linear(dim_kv, self.proj_dim, device=device) #pass device to nn.Linear
-        self.value_proj = nn.Linear(dim_kv, self.proj_dim, device=device) #pass device to nn.Linear
-
+        
+        # Use the larger of the two dimensions as projection dimension
+        self.proj_dim = max(dim_q, dim_kv)
+        
+        # Project both inputs to the same dimension
+        self.query_proj = nn.Linear(dim_q, self.proj_dim, device=device)
+        self.key_proj = nn.Linear(dim_kv, self.proj_dim, device=device)
+        self.value_proj = nn.Linear(dim_kv, self.proj_dim, device=device)
+        
         self.attention = nn.MultiheadAttention(
             embed_dim=self.proj_dim,
             num_heads=num_heads,
             batch_first=True,
-            dropout=0.1,  # Add dropout for regularization
-            device=device #pass device
+            dropout=0.1,
+            device=device
         )
-
-        # Output projection and normalization
-        self.output_proj = nn.Linear(self.proj_dim, dim_q, device=device) #pass device to nn.Linear
-        self.norm_q = nn.LayerNorm(dim_q, device=device) #pass device to nn.LayerNorm
-        self.norm_kv = nn.LayerNorm(dim_kv, device=device) #pass device to nn.LayerNorm
-
+        
+        # Project back to query dimension
+        self.output_proj = nn.Linear(self.proj_dim, dim_q, device=device)
+        self.norm_q = nn.LayerNorm(dim_q, device=device)
+        self.norm_kv = nn.LayerNorm(dim_kv, device=device)
     def forward(self, q, k):
         """
         Args:
@@ -456,6 +451,6 @@ class CrossAttention(nn.Module):
 
         # Reshape back to feature map format [B, C_q, H_q, W_q]
         output = output.permute(0, 2, 1).view(B, C_q, H_q, W_q)
-
+        print(f"CrossAttention: output.shape = {output.shape}")  #Print the shape
         # Add residual connection
         return output + residual
