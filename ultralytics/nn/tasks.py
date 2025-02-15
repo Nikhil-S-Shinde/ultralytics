@@ -1055,6 +1055,12 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             kv_channels = ch[kv_layer]
         
             dim_q, dim_kv, num_heads = args
+
+            print(f"CrossAttention: query_layer={query_layer}, kv_layer={kv_layer}")
+            print(f"CrossAttention: q_channels={q_channels}, kv_channels={kv_channels}, dim_q={dim_q}, dim_kv={dim_kv}")
+    
+            if q_channels != dim_q or kv_channels != dim_kv:
+                raise ValueError(f"Channel mismatch: q_channels={q_channels}, dim_q={dim_q}, kv_channels={kv_channels}, dim_kv={dim_kv}")
             
             # Important: Set output channels to match query channels
             c2 = q_channels  # This ensures proper channel dimensions for subsequent layers
