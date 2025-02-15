@@ -426,6 +426,9 @@ class CrossAttention(nn.Module):
         """
         residual = q
 
+        print(f"Query (Swin) shape: {q.shape}")  # Should match Swin's feature map
+        print(f"Key (CNN) shape: {k.shape}")    # Should match CNN's feature map
+        
         # Reshape tensors to [B, HW, C]
         B, C_q, H_q, W_q = q.shape
         B, C_kv, H_kv, W_kv = k.shape
