@@ -22,9 +22,9 @@ backbone:
   - [-1, 1, SPPF, [768, 5]]  # 13: SPPF for Swin multiscale 3
 
   # Cross-Attention Layers
-  - [[2, 8], 1, CrossAttention, [40, 192, 4]]  # 14: Cross attention at scale 1 (Swin -> CNN)
-  - [[3, 10], 1, CrossAttention, [112, 384, 8]]  # 15: Cross attention at scale 2 (Swin -> CNN)
-  - [[5, 13], 1, CrossAttention, [960, 768, 16]]  # 16: Cross attention at scale 3 (Swin -> CNN)
+  - [[2, 8], 1, CrossAttention, [192, 40, 4]]  # 14: Cross attention at scale 1 (Swin -> CNN)
+  - [[3, 10], 1, CrossAttention, [384, 112, 8]]  # 15: Cross attention at scale 2 (Swin -> CNN)
+  - [[5, 13], 1, CrossAttention, [768, 960, 16]]  # 16: Cross attention at scale 3 (Swin -> CNN)
 
   # Concatenate features along channel dimension
   - [[14, 8], 1, Concat, [1]]  # 17: Concat scale 1 (Cross-attended Swin + CNN)
