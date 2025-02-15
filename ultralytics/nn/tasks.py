@@ -1046,32 +1046,22 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
 
-        elif m is CrossAttention:
-                    if isinstance(f, int):
-                        raise ValueError("CrossAttention requires at least two input layers, but got one.")
-                    elif isinstance(f[0], int):
-                        if len(f) != 2:
-                            raise ValueError(f"CrossAttention requires exactly two input layers, but got {len(f)} layers.")
-                        query_layer, kv_layer = f
-                    elif isinstance(f[0], list):
-                        if len(f[0]) != 2:
-                            raise ValueError(f"CrossAttention nested list requires exactly two input layers, but got {len(f[0])}.")
-                        query_layer, kv_layer = f[0]
-                    else:
-                        raise TypeError(f"Unsupported type for CrossAttention 'from' parameter: {type(f)}")
+       elif m is CrossAttention:
+            if isinstance(f[0], list):
+                query_layer, kv_layer = f[0]
+            else:
+                query_layer, kv_layer = f
         
-                    q_channels = ch[query_layer]
-                    kv_channels = ch[kv_layer]
+            q_channels = ch[query_layer]
+            kv_channels = ch[kv_layer]
         
-                    dim_q, dim_kv, num_heads = args
-        
-                    # No need for the warning anymore, we are fixing the root cause
-                    # if dim_q != q_channels or dim_kv != kv_channels:
-                    #     LOGGER.warning(f"CrossAttention dimension mismatch...")
-        
-                    device = ch[f[0][0] if isinstance(f[0], list) else f[0]].device if isinstance(ch[f[0][0] if isinstance(f[0], list) else f[0]], torch.Tensor) else 'cpu'
-                    args = [dim_q, dim_kv, num_heads, device]  # Include device in args
-                    c2 = q_channels  # Use the actual Swin channel count
+            dim_q, dim_kv, num_heads = args
+            
+            # Important: Set output channels to match query channels
+            c2 = q_channels  # This ensures proper channel dimensions for subsequent layers
+            
+            device = next(model.parameters()).device if hasattr(model, 'parameters') else 'cpu'
+            args = [dim_q, dim_kv, num_heads, device]
         
         elif m in frozenset({Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}):
             args.append([ch[x] for x in f])
