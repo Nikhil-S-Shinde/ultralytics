@@ -1059,7 +1059,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             # Important: Set output channels to match query channels
             c2 = q_channels  # This ensures proper channel dimensions for subsequent layers
             
-            device = next(model.parameters()).device if hasattr(model, 'parameters') else 'cpu'
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
             args = [dim_q, dim_kv, num_heads, device]
         
         elif m in frozenset({Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}):
