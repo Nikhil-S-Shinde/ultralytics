@@ -428,6 +428,10 @@ class CrossAttention(nn.Module):
 
         print(f"Query (Swin) shape: {q.shape}")  # Should match Swin's feature map
         print(f"Key (CNN) shape: {k.shape}")    # Should match CNN's feature map
+        # Ensure spatial dimensions match
+        if q.shape[-2:] != k.shape[-2:]:
+            raise ValueError(f"Spatial dimensions of query {q.shape[-2:]} and key {k.shape[-2:]} do not match!")
+
         
         # Reshape tensors to [B, HW, C]
         B, C_q, H_q, W_q = q.shape
