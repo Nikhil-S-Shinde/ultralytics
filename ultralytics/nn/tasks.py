@@ -1045,41 +1045,36 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+
         elif m is CrossAttention:
-            # Special handling for CrossAttention
-            if isinstance(f, int):
-                # Single input layer (not valid for CrossAttention)
-                raise ValueError("CrossAttention requires at least two input layers, but got one.")
-            elif isinstance(f[0], int):
-                # List of integers (e.g., [2, 8])
-                if len(f) != 2:
-                    raise ValueError(f"CrossAttention requires exactly two input layers, but got {len(f)} layers.")
-                query_layer, kv_layer = f  # Unpack query and key/value layers
-            elif isinstance(f[0], list):
-                # Nested list (e.g., [[2, 8]])
-                if len(f[0]) != 2:
-                    raise ValueError(f"CrossAttention nested list requires exactly two input layers, but got {len(f[0])}.")
-                query_layer, kv_layer = f[0]  # Unpack query and key/value layers
-            else:
-                raise TypeError(f"Unsupported type for CrossAttention 'from' parameter: {type(f)}")
+                if isinstance(f, int):
+                    raise ValueError("CrossAttention requires at least two input layers, but got one.")
+                elif isinstance(f[0], int):
+                    if len(f) != 2:
+                        raise ValueError(f"CrossAttention requires exactly two input layers, but got {len(f)} layers.")
+                    query_layer, kv_layer = f
+                elif isinstance(f[0], list):
+                    if len(f[0]) != 2:
+                        raise ValueError(f"CrossAttention nested list requires exactly two input layers, but got {len(f[0])}.")
+                    query_layer, kv_layer = f[0]
+                else:
+                    raise TypeError(f"Unsupported type for CrossAttention 'from' parameter: {type(f)}")
         
-            # Get channels from the query and key/value layers
-            q_channels = ch[query_layer]  # Query channels
-            kv_channels = ch[kv_layer]  # Key/Value channels
+                q_channels = ch[query_layer] if ch[query_layer] is not None else dim_q
+                kv_channels = ch[kv_layer] if ch[kv_layer] is not None else dim_kv
         
-            # args contains [dim_q, dim_kv, num_heads]
-            dim_q, dim_kv, num_heads = args
+                dim_q, dim_kv, num_heads = args
         
-            # Ensure the arguments are consistent with the input channels
-            if dim_q != q_channels or dim_kv != kv_channels:
-                LOGGER.warning(f"CrossAttention dimension mismatch: dim_q={dim_q}, q_channels={q_channels}, "
-                               f"dim_kv={dim_kv}, kv_channels={kv_channels}. Using dim_q and dim_kv from args.")
+                if dim_q != q_channels or dim_kv != kv_channels:
+                    LOGGER.warning(f"CrossAttention dimension mismatch: dim_q={dim_q}, q_channels={q_channels}, "
+                                   f"dim_kv={dim_kv}, kv_channels={kv_channels}. Using dim_q and dim_kv from args.")
         
-            # Prepare arguments for CrossAttention
-            args = [dim_q, dim_kv, num_heads]
+                args = [dim_q, dim_kv, num_heads]
+                c2 = dim_q
         
-            # Output channels will be dim_q (query dimension)
-            c2 = dim_q            
+                # Get the device from the first input channel (VERY IMPORTANT)
+                device = ch[f[0][0] if isinstance(f[0], list) else f[0]].device if isinstance(ch[f[0][0] if isinstance(f[0], list) else f[0]], torch.Tensor) else 'cpu' #add this line to get device
+                args.append(device) #add this line to append device to args        
         elif m in frozenset({Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}):
             args.append([ch[x] for x in f])
             if m is Segment:
