@@ -29,7 +29,7 @@ backbone:
   - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
 
   # Prepare CNN features for Attention
-  - [2, 1, Conv, [64, 1]]  # 14 Reduce CNN channels for scale 1
+  - [2, 1, Conv, [40, 64, 1]]  # 14 Reduce CNN channels for scale 1
   - [-1, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 15 B, H, W, C
   - [-1, 1, nn.Flatten, [1, 2]]      # 16 Flatten H and W dimensions (B, H*W, C)
 
@@ -46,7 +46,7 @@ backbone:
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 22: Permute back to (B, 192, 80, 80)
 
   # Prepare CNN features for Attention
-  - [3, 1, Conv, [128, 1]]  # 23 Reduce CNN channels for scale 2
+  - [3, 1, Conv, [112, 128, 1]]  # 23 Reduce CNN channels for scale 2
   - [-1, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 24 B, H, W, C
   - [-1, 1, nn.Flatten, [1, 2]]      # 25 Flatten H and W dimensions (B, H*W, C)
 
@@ -63,7 +63,7 @@ backbone:
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 31: Permute back to (B, 384, 40, 40)
 
   # Prepare CNN features for Attention
-  - [5, 1, Conv, [256, 1]]  # 32 Reduce CNN channels for scale 3
+  - [5, 1, Conv, [960, 256, 1]]  # 32 Reduce CNN channels for scale 3
   - [-1, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 33 B, H, W, C
   - [-1, 1, nn.Flatten, [1, 2]]      # 34 Flatten H and W dimensions (B, H*W, C)
 
