@@ -460,15 +460,14 @@ class MultiHeadAttention(nn.Module):
     """
 
     def __init__(self, indices, embedding_dim, num_heads, kv_in_dim=None):
-         """
+        """
         Args:
             indices (list): List of indices for query, key, value tensors
             embedding_dim (int): Dimension of embeddings
             num_heads (int): Number of attention heads
             kv_in_dim (int, optional): Dimension of key/value inputs
         """
-        super().__init__()
-            
+        super().__init__()                
         # Type checking
         assert isinstance(indices, list), f"indices must be list, got {type(indices)}"
         assert len(indices) == 3, f"indices must contain 3 indices for [query, key, value], got {len(indices)}"
@@ -484,10 +483,8 @@ class MultiHeadAttention(nn.Module):
             
         # Validate dimensions
         assert self.internal_dim % num_heads == 0, \
-            f"num_heads ({num_heads}) must divide embedding_dim ({self.internal_dim})"
-            
-        print(f"Attention Init: indices={indices}, embedding_dim={embedding_dim}, "
-                f"num_heads={num_heads}, kv_in_dim={self.kv_in_dim}")
+            f"num_heads ({num_heads}) must divide embedding_dim ({self.internal_dim})"    
+        print(f"Attention Init: indices={indices}, embedding_dim={embedding_dim}, "f"num_heads={num_heads}, kv_in_dim={self.kv_in_dim}")
         
         # Create projection layers
         self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
