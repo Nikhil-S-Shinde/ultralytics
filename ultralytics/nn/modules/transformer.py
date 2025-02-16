@@ -548,16 +548,56 @@ class MultiHeadAttention(nn.Module):
         super().__init__()
         self.f = indices  # [q_idx, k_idx, v_idx]
         self.embedding_dim = embedding_dim
+        self.num_heads = num_heads
         self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
-        
+
+        # Debugging: Ensure values are correct
+        print(f"Initializing MultiHeadAttention: indices={indices}, embedding_dim={embedding_dim}, "
+              f"num_heads={num_heads}, kv_in_dim={self.kv_in_dim}")
+
+        # Assert that embed_dim is divisible by num_heads
+        assert embedding_dim % num_heads == 0, (
+            f"embed_dim ({embedding_dim}) must be divisible by num_heads ({num_heads})"
+        )
         # Use PyTorch's implementation
         self.attn = nn.MultiheadAttention(
             embed_dim=embedding_dim,
             num_heads=num_heads,
-            kdim=kv_in_dim,
-            vdim=kv_in_dim,
+            kdim=self.kv_in_dim,
+            vdim=self.kv_in_dim,
             batch_first=True  # Important: expect (B, N, C) format
         )
+
+        # Debugging: Output head_dim calculation
+        head_dim = embedding_dim // num_heads
+        print(f"MultiHeadAttention initialized successfully: head_dim={head_dim}")
+
+    def forward(self, x, *args):
+        """
+        Args:
+            x: Current input
+            args: Will contain the saved outputs list from YOLO
+        """
+        outputs = args[0] if args else []
+
+        # Debugging: Check saved outputs and indices
+        print(f"Forward pass in MultiHeadAttention: indices={self.f}, outputs available={len(outputs)}")
+        
+        # Get q, k, v tensors - they should already be in (B, N, C) format
+        q = outputs[self.f[0]]
+        k = outputs[self.f[1]]
+        v = outputs[self.f[2]]
+
+        # Debugging: Log shapes of q, k, v
+        print(f"Shapes - q: {q.shape}, k: {k.shape}, v: {v.shape}")
+
+        # Apply attention - PyTorch's MultiheadAttention returns attn_output, attn_weights
+        attn_output, _ = self.attn(q, k, v)
+
+        # Debugging: Log the output shape
+        print(f"Attention output shape: {attn_output.shape}")
+
+        return attn_output
         
         # For YOLO model summary
         self.i = None
