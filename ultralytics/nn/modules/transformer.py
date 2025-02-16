@@ -490,31 +490,30 @@ class MultiHeadAttention(nn.Module):
             >>> print(output.shape)
             torch.Size([1, 100, 256])
         """
-        super().__init__()
-    
-        # Type checking to prevent argument confusion
-        assert isinstance(f, (list, int)), f"f must be list or int, got {type(f)}"
+         # Type checking
+        assert isinstance(f, list), f"f must be list, got {type(f)}"
+        assert len(f) == 3, f"f must contain 3 indices for [query, key, value], got {len(f)}"
         assert isinstance(embedding_dim, int), f"embedding_dim must be int, got {type(embedding_dim)}"
         assert isinstance(num_heads, int), f"num_heads must be int, got {type(num_heads)}"
         
-        self.f = f
+        self.f = f  # Save indices for forward pass
         self.embedding_dim = embedding_dim
         self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
         self.internal_dim = embedding_dim
         self.num_heads = num_heads
         
-        print(f"Debug: f={f}, embedding_dim={embedding_dim}, internal_dim={self.internal_dim}, "
-              f"num_heads={num_heads}, kv_in_dim={kv_in_dim}")
+        print(f"Attention Init: f={f}, embedding_dim={embedding_dim}, "
+              f"num_heads={num_heads}, kv_in_dim={self.kv_in_dim}")
         
         assert self.internal_dim % num_heads == 0, \
             f"num_heads ({num_heads}) must divide embedding_dim ({self.internal_dim})"
     
-        # Define the projection layers
+        # Projection layers
         self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
         self.k_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
         self.v_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
         self.out_proj = nn.Linear(self.internal_dim, embedding_dim)
-
+        
     @staticmethod
     def _separate_heads(x: Tensor, num_heads: int) -> Tensor:
         """Separates the input tensor into the specified number of attention heads."""
