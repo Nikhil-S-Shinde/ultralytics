@@ -540,81 +540,44 @@ class DeformableTransformerDecoder(nn.Module):
 #         return output
 
 class MultiHeadAttention(nn.Module):
+    """
+    Wrapper for torch.nn.MultiheadAttention that works with YOLO architecture.
+    Expects inputs to already be in the correct shape (B, N, C) from previous Permute and Flatten ops.
+    """
     def __init__(self, indices, embedding_dim, num_heads, kv_in_dim=None):
         super().__init__()
-        self.f = indices  # indices for [query, key, value]
-        print(f"Initializing MultiHeadAttention with indices {indices}")  # Debug print
+        self.f = indices  # [q_idx, k_idx, v_idx]
         self.embedding_dim = embedding_dim
         self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
-        self.num_heads = num_heads
         
-        # Validate dimensions
-        assert embedding_dim % num_heads == 0, \
-            f"num_heads ({num_heads}) must divide embedding_dim ({embedding_dim})"
+        # Use PyTorch's implementation
+        self.attn = nn.MultiheadAttention(
+            embed_dim=embedding_dim,
+            num_heads=num_heads,
+            kdim=kv_in_dim,
+            vdim=kv_in_dim,
+            batch_first=True  # Important: expect (B, N, C) format
+        )
         
-        # Create projection layers
-        self.q_proj = nn.Linear(embedding_dim, embedding_dim)
-        self.k_proj = nn.Linear(kv_in_dim, embedding_dim)
-        self.v_proj = nn.Linear(kv_in_dim, embedding_dim)
-        self.out_proj = nn.Linear(embedding_dim, embedding_dim)
-        
-    @staticmethod
-    def _separate_heads(x, num_heads):
-        b, n, c = x.shape
-        x = x.reshape(b, n, num_heads, c // num_heads)
-        return x.transpose(1, 2)
-    
-    @staticmethod
-    def _recombine_heads(x):
-        b, n_heads, n_tokens, c_per_head = x.shape
-        x = x.transpose(1, 2)
-        return x.reshape(b, n_tokens, n_heads * c_per_head)
-        
-    def forward(self, x):
+        # For YOLO model summary
+        self.i = None
+        self.type = 'MultiHeadAttention'
+
+    def forward(self, x, *args):
         """
-            Modified to handle YOLO's output list structure
-            Args:
-            x: List containing [current_tensor, outputs_list]
+        Args:
+            x: Current input
+            args: Will contain the saved outputs list from YOLO
         """
-        if isinstance(x, (list, tuple)):
-            current, outputs = x[0], x[1]
-        else:
-            current, outputs = x, []
-            
-        # Debug print
-        print(f"\nMultiHeadAttention layer forward pass:")
-        print(f"Indices needed: {self.f}")
-        print(f"Available outputs: {[i for i, out in enumerate(outputs) if out is not None]}")
+        outputs = args[0] if args else []
         
-        # Get q, k, v from outputs
-        try:
-            q = outputs[self.f[0]]
-            k = outputs[self.f[1]]
-            v = outputs[self.f[2]]
-        except IndexError as e:
-            print(f"Error: Cannot access indices {self.f} in outputs list of length {len(outputs)}")
-            print(f"Available outputs: {[i for i, out in enumerate(outputs) if out is not None]}")
-            raise e
-            
-        # Project q, k, v
-        q = self.q_proj(q)
-        k = self.k_proj(k)
-        v = self.v_proj(v)
+        # Get q, k, v tensors - they should already be in (B, N, C) format
+        # from previous Permute and Flatten operations
+        q = outputs[self.f[0]]
+        k = outputs[self.f[1]]
+        v = outputs[self.f[2]]
         
-        # Separate into attention heads
-        q = self._separate_heads(q, self.num_heads)
-        k = self._separate_heads(k, self.num_heads)
-        v = self._separate_heads(v, self.num_heads)
+        # Apply attention - PyTorch's MultiheadAttention returns attn_output, attn_weights
+        attn_output, _ = self.attn(q, k, v)
         
-        # Compute attention scores
-        d_k = q.shape[-1]
-        attn_weights = torch.softmax(q @ k.transpose(-2, -1) / math.sqrt(d_k), dim=-1)
-        
-        # Apply attention to values
-        attn_output = attn_weights @ v
-        
-        # Recombine attention heads and project output
-        attn_output = self._recombine_heads(attn_output)
-        output = self.out_proj(attn_output)
-        
-        return output
+        return attn_output
