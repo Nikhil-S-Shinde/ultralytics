@@ -1102,9 +1102,11 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                          
         elif m is Attention:
             print(f"Parse model debug: f={f}, args={args}")
-            # Ensure correct order of arguments
-            embedding_dim, num_heads, kv_in_dim = args  # Unpack in correct order
-            m_ = m(f, embedding_dim, num_heads, kv_in_dim=kv_in_dim)  # Pass explicitly
+            # Create a wrapper to ensure correct argument order
+            def create_attention():
+                return m(f, embedding_dim=args[0], num_heads=args[1], kv_in_dim=args[2])
+            print(f"Creating Attention with: f={f}, embedding_dim={args[0]}, num_heads={args[1]}, kv_in_dim={args[2]}")
+            m_ = torch.nn.Sequential(*(create_attention() for _ in range(n))) if n > 1 else create_attention()
             
         else:
             c2 = ch[f]
