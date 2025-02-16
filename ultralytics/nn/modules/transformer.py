@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.init import constant_, xavier_uniform_
+from torch import Tensor
 
 from .conv import Conv
 from .utils import _get_clones, inverse_sigmoid, multi_scale_deformable_attn_pytorch
@@ -22,6 +23,7 @@ __all__ = (
     "DeformableTransformerDecoderLayer",
     "MSDeformAttn",
     "MLP",
+    "Attention",
 )
 
 
@@ -425,3 +427,113 @@ class DeformableTransformerDecoder(nn.Module):
             refer_bbox = refined_bbox.detach() if self.training else refined_bbox
 
         return torch.stack(dec_bboxes), torch.stack(dec_cls)
+
+class Attention(nn.Module):
+    """
+    An attention layer with downscaling capability for embedding size after projection.
+
+    This class implements a multi-head attention mechanism with the option to downsample the internal
+    dimension of queries, keys, and values.
+
+    Attributes:
+        embedding_dim (int): Dimensionality of input embeddings.
+        kv_in_dim (int): Dimensionality of key and value inputs.
+        internal_dim (int): Internal dimension after downsampling.
+        num_heads (int): Number of attention heads.
+        q_proj (nn.Linear): Linear projection for queries.
+        k_proj (nn.Linear): Linear projection for keys.
+        v_proj (nn.Linear): Linear projection for values.
+        out_proj (nn.Linear): Linear projection for output.
+
+    Methods:
+        _separate_heads: Separates input tensor into attention heads.
+        _recombine_heads: Recombines separated attention heads.
+        forward: Computes attention output for given query, key, and value tensors.
+
+    Examples:
+        >>> attn = Attention(embedding_dim=256, num_heads=8, downsample_rate=2)
+        >>> q = torch.randn(1, 100, 256)
+        >>> k = v = torch.randn(1, 50, 256)
+        >>> output = attn(q, k, v)
+        >>> print(output.shape)
+        torch.Size([1, 100, 256])
+    """
+
+    def __init__(
+        self,
+        embedding_dim: int,
+        num_heads: int,
+        downsample_rate: int = 1,
+        kv_in_dim: int = None,
+    ) -> None:
+        """
+        Initializes the Attention module with specified dimensions and settings.
+
+        This class implements a multi-head attention mechanism with optional downsampling of the internal
+        dimension for queries, keys, and values.
+
+        Args:
+            embedding_dim (int): Dimensionality of input embeddings.
+            num_heads (int): Number of attention heads.
+            downsample_rate (int): Factor by which internal dimensions are downsampled. Defaults to 1.
+            kv_in_dim (int | None): Dimensionality of key and value inputs. If None, uses embedding_dim.
+
+        Raises:
+            AssertionError: If num_heads does not evenly divide the internal dim (embedding_dim / downsample_rate).
+
+        Examples:
+            >>> attn = Attention(embedding_dim=256, num_heads=8, downsample_rate=2)
+            >>> q = torch.randn(1, 100, 256)
+            >>> k = v = torch.randn(1, 50, 256)
+            >>> output = attn(q, k, v)
+            >>> print(output.shape)
+            torch.Size([1, 100, 256])
+        """
+        super().__init__()
+        self.embedding_dim = embedding_dim
+        self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
+        self.internal_dim = embedding_dim // downsample_rate
+        self.num_heads = num_heads
+        assert self.internal_dim % num_heads == 0, "num_heads must divide embedding_dim."
+
+        self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
+        self.k_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
+        self.v_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
+        self.out_proj = nn.Linear(self.internal_dim, embedding_dim)
+
+    @staticmethod
+    def _separate_heads(x: Tensor, num_heads: int) -> Tensor:
+        """Separates the input tensor into the specified number of attention heads."""
+        b, n, c = x.shape
+        x = x.reshape(b, n, num_heads, c // num_heads)
+        return x.transpose(1, 2)  # B x N_heads x N_tokens x C_per_head
+
+    @staticmethod
+    def _recombine_heads(x: Tensor) -> Tensor:
+        """Recombines separated attention heads into a single tensor."""
+        b, n_heads, n_tokens, c_per_head = x.shape
+        x = x.transpose(1, 2)
+        return x.reshape(b, n_tokens, n_heads * c_per_head)  # B x N_tokens x C
+
+    def forward(self, q: Tensor, k: Tensor, v: Tensor) -> Tensor:
+        """Applies multi-head attention to query, key, and value tensors with optional downsampling."""
+        # Input projections
+        q = self.q_proj(q)
+        k = self.k_proj(k)
+        v = self.v_proj(v)
+
+        # Separate into heads
+        q = self._separate_heads(q, self.num_heads)
+        k = self._separate_heads(k, self.num_heads)
+        v = self._separate_heads(v, self.num_heads)
+
+        # Attention
+        _, _, _, c_per_head = q.shape
+        attn = q @ k.permute(0, 1, 3, 2)  # B x N_heads x N_tokens x N_tokens
+        attn = attn / math.sqrt(c_per_head)
+        attn = torch.softmax(attn, dim=-1)
+
+        # Get output
+        out = attn @ v
+        out = self._recombine_heads(out)
+        return self.out_proj(out)
