@@ -1101,10 +1101,13 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [*args[1:]]
                          
         elif m is MultiHeadAttention:
-            # Simple debug print if needed
             print(f"Parse model debug: f={f}, args={args}")
-            # Use standard YOLO parsing pattern
-            m_ = torch.nn.Sequential(*(m(f, *args) for _ in range(n))) if n > 1 else m(f, *args)
+            # Combine f and args into a single args list
+            args = [f] + list(args)
+            # m_ = torch.nn.Sequential(*(m(*args) for _ in range(n))) if n > 1 else m(*args)
+
+        else:
+            c2 = ch[f]
 
         m_ = torch.nn.Sequential(*(m(*args) for _ in range(n))) if n > 1 else m(*args)  # module
         t = str(m)[8:-2].replace("__main__.", "")  # module type
