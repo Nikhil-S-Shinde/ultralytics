@@ -41,7 +41,7 @@ backbone:
 
   # Reshape the attended features back to the original shape
   - [19, 1, nn.Linear, [192, 192]] # 20 Transform attended swin features to output channel 192
-  - [-1, 1, nn.Unflatten, [1, (80, 80)]] # 21 Unflatten back to (B, 80, 80, 192)
+  - [-1, 1, nn.Unflatten, [1, [80, 80]]] # 21 Unflatten back to (B, 80, 80, 192)
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 22: Permute back to (B, 192, 80, 80)
 
   # Prepare CNN features for Attention
@@ -58,7 +58,7 @@ backbone:
 
   # Reshape the attended features back to the original shape
   - [28, 1, nn.Linear, [384, 384]] # 29 Transform attended swin features to output channel 384
-  - [-1, 1, nn.Unflatten, [1, (40, 40)]] # 30 Unflatten back to (B, 40, 40, 384)
+  - [-1, 1, nn.Unflatten, [1, [40, 40]]] # 30 Unflatten back to (B, 40, 40, 384)
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 31: Permute back to (B, 384, 40, 40)
 
   # Prepare CNN features for Attention
@@ -75,7 +75,7 @@ backbone:
 
   # Reshape the attended features back to the original shape
   - [37, 1, nn.Linear, [768, 768]] # 38 Transform attended swin features to output channel 768
-  - [-1, 1, nn.Unflatten, [1, (20, 20)]] # 39 Unflatten back to (B, 20, 20, 768)
+  - [-1, 1, nn.Unflatten, [1, [20, 20]]] # 39 Unflatten back to (B, 20, 20, 768)
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 40: Permute back to (B, 768, 20, 20)
 
   # Concat features along channel dimension
