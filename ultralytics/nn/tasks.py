@@ -1074,19 +1074,36 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
 
         elif m is MultiHeadAttention:
             # Parse MultiHeadAttention-specific args
-            print(f"Parse model debug: f={f}, args={args}")  # Debugging output
+            print(f"Parsing MultiHeadAttention module: f={f}, args={args}")  # Debugging output
             indices = f  # Indices refer to [q_idx, k_idx, v_idx]
-            embedding_dim = args[0]  # First argument is embedding_dim
-            num_heads = args[1]      # Second argument is num_heads
-            kv_in_dim = args[2] if len(args) > 2 else None  # Optional third argument (key-value input dimension)
-
-            print(f"MultiHeadAttention: indices={indices}, embedding_dim={embedding_dim}, "f"num_heads={num_heads}, kv_in_dim={kv_in_dim}")
+            
+            # Ensure all args are valid and integers
+            try:
+                embedding_dim = int(args[0])  # First argument is embedding_dim
+                num_heads = int(args[1])      # Second argument is num_heads
+                kv_in_dim = int(args[2]) if len(args) > 2 else None  # Optional third argument (key-value input dimension)
+            except ValueError as e:
+                raise ValueError(f"Invalid argument in MultiHeadAttention args: {args}. Error: {e}")
+            
+            # Debugging: Log parsed values
+            print(f"MultiHeadAttention Args: indices={indices}, embedding_dim={embedding_dim}, "
+                  f"num_heads={num_heads}, kv_in_dim={kv_in_dim}")
+        
+            # Check divisibility before initializing
+            assert embedding_dim % num_heads == 0, (
+                f"embed_dim ({embedding_dim}) must be divisible by num_heads ({num_heads})"
+            )
+        
             # Initialize MultiHeadAttention with parsed args
             m_ = MultiHeadAttention(indices=indices, embedding_dim=embedding_dim, num_heads=num_heads, kv_in_dim=kv_in_dim)
             t = str(m)[8:-2].replace("__main__.", "")  # module type
             m_.np = sum(x.numel() for x in m_.parameters())  # number of parameters
             m_.i, m_.f, m_.type = i, f, t  # attach index, 'from' index, type
             layers.append(m_)
+        
+            # Final Debugging: Confirm layer added
+            print(f"Added MultiHeadAttention layer: indices={indices}, embedding_dim={embedding_dim}, "
+                  f"num_heads={num_heads}, kv_in_dim={kv_in_dim}")
 
         else:
             c2 = ch[f]
