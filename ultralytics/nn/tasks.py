@@ -1099,11 +1099,12 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c2 = args[0]
             c1 = ch[f]
             args = [*args[1:]]
-                 
+                         
         elif m is Attention:
-            c2 = args[0]  # embedding_dim
             print(f"Parse model debug: f={f}, args={args}")
-            m_ = m(f, args[0], args[1], args[2])  # Explicitly pass embedding_dim, num_heads, kv_in_dim
+            # Ensure correct order of arguments
+            embedding_dim, num_heads, kv_in_dim = args  # Unpack in correct order
+            m_ = m(f, embedding_dim, num_heads, kv_in_dim=kv_in_dim)  # Pass explicitly
             
         else:
             c2 = ch[f]
