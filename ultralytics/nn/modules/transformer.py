@@ -566,17 +566,19 @@ class MultiHeadAttention(nn.Module):
 
     def forward(self, x):
         """
-        Forward pass handling multiple inputs based on YAML 'from' parameter.
+        Forward pass for the attention module.
         
         Args:
-            x (List[torch.Tensor]): List containing [query, key, value] tensors
-                - x[0]: Query tensor from Swin (B, N_q, embed_dim)
-                - x[1]: Key tensor from CNN (B, N_k, kdim)
-                - x[2]: Value tensor from CNN (B, N_k, kdim)
+            x (list): List of input tensors corresponding to the 'f' indices
+                x[0]: Query tensor from Swin
+                x[1]: Key tensor from CNN 
+                x[2]: Value tensor from CNN (same as key in your case)
         
         Returns:
-            torch.Tensor: Attended features (B, N_q, embed_dim)
+            torch.Tensor: Attended features
         """
+        # In your YAML, you're using the same CNN features for key and value
+        # e.g., [16, 16] in [[18, 16, 16], 1, MultiHeadAttention, [192, 8, 64]]
         query, key, value = x
         
         # Apply multi-head attention
