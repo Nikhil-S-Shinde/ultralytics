@@ -67,7 +67,7 @@ backbone:
   - [-1, 1, nn.Flatten, [1, 2]]      # 34 Flatten H and W dimensions (B, H*W, C)
 
   # Prepare Swin features for Attention
-  - [12, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 35 B, H, W, C
+  - [13, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 35 B, H, W, C
   - [-1, 1, nn.Flatten, [1, 2]]      # 36 Flatten H and W dimensions (B, H*W, C)
 
   # Cross-Attention Modules (Swin attends to CNN)
@@ -78,18 +78,23 @@ backbone:
   - [-1, 1, nn.Unflatten, [1, [20, 20]]] # 39 Unflatten back to (B, 20, 20, 768)
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 40: Permute back to (B, 768, 20, 20)
 
+# Final features
+  - [22, 1, nn.Identity, []] #41  P3
+  - [31, 1, nn.Identity, []] # 42 P4
+  - [40, 1, nn.Identity, []] # 43 P5
+
   # Channel reduction before concatenation
   # - [22, 1, Conv, [128, 1]]  # 41 Reduce attention features scale 1
   # - [2, 1, Conv, [128, 1]]   # 42 Reduce CNN features scale 1
-  - [[41, 42], 1, Concat, [1]] # 43 concat scale 1 (256 channels)
+  # - [[41, 42], 1, Concat, [1]] # 43 concat scale 1 (256 channels)
 
   # - [31, 1, Conv, [256, 1]]  # 44 Reduce attention features scale 2
   # - [3, 1, Conv, [256, 1]]   # 45 Reduce CNN features scale 2
-  - [[44, 45], 1, Concat, [1]] # 46 concat scale 2 (512 channels)
+  # - [[44, 45], 1, Concat, [1]] # 46 concat scale 2 (512 channels)
 
   # - [40, 1, Conv, [512, 1]]  # 47 Reduce attention features scale 3
   # - [5, 1, Conv, [512, 1]]   # 48 Reduce CNN features scale 3
-  - [[47, 48], 1, Concat, [1]] # 49 concat scale 3 (1024 channels)
+  # - [[47, 48], 1, Concat, [1]] # 49 concat scale 3 (1024 channels)
 
 head:
   # # Top-down path (FPN)
