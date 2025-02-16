@@ -23,7 +23,7 @@ __all__ = (
     "DeformableTransformerDecoderLayer",
     "MSDeformAttn",
     "MLP",
-    "Attention",
+    "MultiHeadAttention",
 )
 
 
@@ -428,7 +428,7 @@ class DeformableTransformerDecoder(nn.Module):
 
         return torch.stack(dec_bboxes), torch.stack(dec_cls)
 
-class Attention(nn.Module):
+class MultiHeadAttention(nn.Module):
     """
     An attention layer with downscaling capability for embedding size after projection.
 
