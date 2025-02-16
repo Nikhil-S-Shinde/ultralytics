@@ -1079,7 +1079,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             embedding_dim = args[0]  # First argument is embedding_dim
             num_heads = args[1]      # Second argument is num_heads
             kv_in_dim = args[2] if len(args) > 2 else None  # Optional third argument (key-value input dimension)
-        
+
+            print(f"MultiHeadAttention: indices={indices}, embedding_dim={embedding_dim}, "f"num_heads={num_heads}, kv_in_dim={kv_in_dim}")
             # Initialize MultiHeadAttention with parsed args
             m_ = MultiHeadAttention(indices=indices, embedding_dim=embedding_dim, num_heads=num_heads, kv_in_dim=kv_in_dim)
             t = str(m)[8:-2].replace("__main__.", "")  # module type
