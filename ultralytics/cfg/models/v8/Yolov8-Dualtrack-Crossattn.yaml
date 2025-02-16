@@ -115,4 +115,4 @@ head:
   # - [-1, 1, C2f, [1024, True]] #65: Process features
   
   # - [[57, 61, 65], 1, Detect, [nc]] #66: Detection head
-  - [[47, 48, 49], 1, Detect, [nc]] #66: Detection head
+  - [[41, 42, 43], 1, Detect, [nc]] #66: Detection head
