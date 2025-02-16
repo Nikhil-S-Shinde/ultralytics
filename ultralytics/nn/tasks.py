@@ -1046,28 +1046,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
             print(f"Concat: c2={c2}")
-        elif m is CrossAttention:
-            if isinstance(f[0], list):
-                query_layer, kv_layer = f[0]
-            else:
-                query_layer, kv_layer = f
-        
-            q_channels = ch[query_layer]
-            kv_channels = ch[kv_layer]
-        
-            dim_q, dim_kv, num_heads = args
-
-            print(f"CrossAttention: query_layer={query_layer}, kv_layer={kv_layer}")
-            print(f"CrossAttention: q_channels={q_channels}, kv_channels={kv_channels}, dim_q={dim_q}, dim_kv={dim_kv}")
-    
-            if q_channels != dim_q or kv_channels != dim_kv:
-                raise ValueError(f"Channel mismatch: q_channels={q_channels}, dim_q={dim_q}, kv_channels={kv_channels}, dim_kv={dim_kv}")
-            
-            # Important: Set output channels to match query channels
-            c2 = q_channels  # This ensures proper channel dimensions for subsequent layers
-            
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            args = [dim_q, dim_kv, num_heads, device]
         
         elif m in frozenset({Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}):
             args.append([ch[x] for x in f])
@@ -1075,19 +1053,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 args[2] = make_divisible(min(args[2], max_channels) * width, 8)
             if m in {Detect, Segment, Pose, OBB}:
                 m.legacy = legacy
-        # elif m is MultiHeadAttention:
-        #     print(f"MultiHeadAttention args before fix: {args}")  # Debugging print
-        #     # Ensure args are extracted properly
-        #     embed_dim, num_heads = args  # Assuming args contains [embed_dim, num_heads]
-        #     # Fetching the input layers for query, key, value
-        #     input_layers = [ch[x] for x in f]  # Get outputs of previous layers
-        #     if len(input_layers) != 3:
-        #         raise ValueError(f"MultiHeadAttention requires 3 inputs (query, key, value), but got {len(input_layers)}.")
-        #     print(f"MultiHeadAttention will receive inputs from layers: {f}")
-        #     # Initialize MultiHeadAttention module
-        #     m_ = m(embed_dim, num_heads)
-        #     # Store output channels
-        #     c2 = embed_dim  # Multi-head attention output will have the same embedding dimension
         elif m is RTDETRDecoder:  # special case, channels arg must be passed in index 1
             args.insert(1, [ch[x] for x in f])
         elif m is CBLinear:
