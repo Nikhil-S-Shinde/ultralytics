@@ -1105,8 +1105,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [inputs, *args]  # Pass inputs as the first argument to Attention
             c2 = args[1]  # Use `embedding_dim` (args[1]) as the output channel dimension
 
-        elif m is torch.nn.Flatten:
-            c2 = ch[f]  # Channel dimension remains the same
         else:
             c2 = ch[f]
 
