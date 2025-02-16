@@ -28,7 +28,7 @@ backbone:
   - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
 
   # Prepare CNN features for Attention
-  - [2, 1, Conv, [64, 1]]  # 14 Reduce CNN channels for scale 1, Adjust the number of output channels as needed (e.g., C2 // 4)
+  - [2, 1, Conv, [64, 1]]  # 14 Reduce CNN channels for scale 1
   - [-1, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 15 B, H, W, C
   - [-1, 1, nn.Flatten, [1, 2]]      # 16 Flatten H and W dimensions (B, H*W, C)
 
@@ -37,15 +37,15 @@ backbone:
   - [-1, 1, nn.Flatten, [1, 2]]      # 18 Flatten H and W dimensions (B, H*W, C)
 
   # Cross-Attention Modules (Swin attends to CNN)
-  - [[18, 16, 16], 1, MultiHeadAttention, [192, 8, 64]]  # 19 Swin (Q) attends to CNN (K, V), output channels = 192, kv_in_dim = 64
+  - [[18, 16, 16], 1, MultiHeadAttention, [192, 8, 64]]  # 19 Swin (Q) attends to CNN (K, V)
 
   # Reshape the attended features back to the original shape
-  - [19, 1, nn.Linear, [192, 192]] # 20 Transform attended swin features to output channel 192
+  - [19, 1, nn.Linear, [192, 192]] # 20 Transform attended swin features
   - [-1, 1, nn.Unflatten, [1, [80, 80]]] # 21 Unflatten back to (B, 80, 80, 192)
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 22: Permute back to (B, 192, 80, 80)
 
   # Prepare CNN features for Attention
-  - [3, 1, Conv, [128, 1]]  # 23 Reduce CNN channels for scale 2, Adjust the number of output channels as needed (e.g., C2 // 4)
+  - [3, 1, Conv, [128, 1]]  # 23 Reduce CNN channels for scale 2
   - [-1, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 24 B, H, W, C
   - [-1, 1, nn.Flatten, [1, 2]]      # 25 Flatten H and W dimensions (B, H*W, C)
 
@@ -54,15 +54,15 @@ backbone:
   - [-1, 1, nn.Flatten, [1, 2]]      # 27 Flatten H and W dimensions (B, H*W, C)
 
   # Cross-Attention Modules (Swin attends to CNN)
-  - [[27, 25, 25], 1, MultiHeadAttention, [384, 8, 128]]  # 28 Swin (Q) attends to CNN (K, V), output channels = 384, kv_in_dim = 128
+  - [[27, 25, 25], 1, MultiHeadAttention, [384, 8, 128]]  # 28 Swin (Q) attends to CNN (K, V)
 
   # Reshape the attended features back to the original shape
-  - [28, 1, nn.Linear, [384, 384]] # 29 Transform attended swin features to output channel 384
+  - [28, 1, nn.Linear, [384, 384]] # 29 Transform attended swin features
   - [-1, 1, nn.Unflatten, [1, [40, 40]]] # 30 Unflatten back to (B, 40, 40, 384)
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 31: Permute back to (B, 384, 40, 40)
 
   # Prepare CNN features for Attention
-  - [5, 1, Conv, [256, 1]]  # 32 Reduce CNN channels for scale 3, Adjust the number of output channels as needed (e.g., C2 // 4)
+  - [5, 1, Conv, [256, 1]]  # 32 Reduce CNN channels for scale 3
   - [-1, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 33 B, H, W, C
   - [-1, 1, nn.Flatten, [1, 2]]      # 34 Flatten H and W dimensions (B, H*W, C)
 
@@ -71,33 +71,43 @@ backbone:
   - [-1, 1, nn.Flatten, [1, 2]]      # 36 Flatten H and W dimensions (B, H*W, C)
 
   # Cross-Attention Modules (Swin attends to CNN)
-  - [[36, 34, 34], 1, MultiHeadAttention, [768, 8, 256]]  # 37 Swin (Q) attends to CNN (K, V), output channels = 768, kv_in_dim = 256
+  - [[36, 34, 34], 1, MultiHeadAttention, [768, 8, 256]]  # 37 Swin (Q) attends to CNN (K, V)
 
   # Reshape the attended features back to the original shape
-  - [37, 1, nn.Linear, [768, 768]] # 38 Transform attended swin features to output channel 768
+  - [37, 1, nn.Linear, [768, 768]] # 38 Transform attended swin features
   - [-1, 1, nn.Unflatten, [1, [20, 20]]] # 39 Unflatten back to (B, 20, 20, 768)
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 40: Permute back to (B, 768, 20, 20)
 
-  # Concat features along channel dimension
-  - [[22, 2], 1, Concat, [1]] # 41 concat scale 1
-  - [[31, 3], 1, Concat, [1]] # 42 concat scale 2
-  - [[40, 5], 1, Concat, [1]] # 43 concat scale 3
+  # Channel reduction before concatenation
+  - [22, 1, Conv, [128, 1]]  # 41 Reduce attention features scale 1
+  - [2, 1, Conv, [128, 1]]   # 42 Reduce CNN features scale 1
+  - [[41, 42], 1, Concat, [1]] # 43 concat scale 1 (256 channels)
+
+  - [31, 1, Conv, [256, 1]]  # 44 Reduce attention features scale 2
+  - [3, 1, Conv, [256, 1]]   # 45 Reduce CNN features scale 2
+  - [[44, 45], 1, Concat, [1]] # 46 concat scale 2 (512 channels)
+
+  - [40, 1, Conv, [512, 1]]  # 47 Reduce attention features scale 3
+  - [5, 1, Conv, [512, 1]]   # 48 Reduce CNN features scale 3
+  - [[47, 48], 1, Concat, [1]] # 49 concat scale 3 (1024 channels)
 
 head:
-  - [43, 1, nn.Upsample, [None, 2, "nearest"]] #44 upsample 43 to match H and W with 42
-  - [[-1, 42], 1, Concat, [1]] # 45  44+42
-  - [-1, 1, C2f, [512]] #46
-  - [46, 1, nn.Upsample, [None, 2, "nearest"]] #47 upsample 46 to match H and W
-  - [[-1, 41], 1, Concat, [1]] # 48  47+41
-  - [-1, 1, C2f, [256]] #49
-  # Bottom-Up Pathway (from Scale 1 to Scale 3)
-  - [49, 1, Conv, [256, 3, 2]]    # 50: Downsample (256, 80, 80) -> (256, 40, 40)
-  - [[-1, 46], 1, Concat, [1]]   # 51: Concatenate with upsampled Scale 2 output (512, 40, 40) + (256, 40, 40) -> (768, 40, 40)
-  - [-1, 1, C2f, [512, True]]    # 52: C2f,  (768, 40, 40) -> (512, 40, 40) (P4/16-medium)
+  - [49, 1, nn.Upsample, [None, 2, "nearest"]] #50 upsample scale 3 to match scale 2
+  - [[-1, 46], 1, Concat, [1]] # 51 concat upsampled scale 3 with scale 2
+  - [-1, 1, C2f, [512]] #52 process combined features
 
-  - [52, 1, Conv, [512, 3, 2]]    # 53: Downsample (512, 40, 40) -> (512, 20, 20)
-  - [[-1, 43], 1, Concat, [1]]   # 54: Concatenate with Scale 3 (1728, 20, 20) + (512, 20, 20) -> (2240, 20, 20)
-  - [-1, 1, C2f, [1024, True]]   # 55: C2f, (2240, 20, 20) -> (1024, 20, 20) (P5/32-large)
-  # - [-1, 1, nn.Identity, []]
-  - [[49, 52, 55], 1, Detect, [nc]]  # 56: Detect(P3, P4, P5)
+  - [52, 1, nn.Upsample, [None, 2, "nearest"]] #53 upsample to match scale 1
+  - [[-1, 43], 1, Concat, [1]] # 54 concat with scale 1
+  - [-1, 1, C2f, [256]] #55 process combined features
+
+  # Bottom-Up Pathway (from Scale 1 to Scale 3)
+  - [55, 1, Conv, [256, 3, 2]]    # 56: Downsample to scale 2
+  - [[-1, 52], 1, Concat, [1]]   # 57: Concatenate with scale 2 features
+  - [-1, 1, C2f, [512, True]]    # 58: Process combined features
+
+  - [58, 1, Conv, [512, 3, 2]]    # 59: Downsample to scale 3
+  - [[-1, 49], 1, Concat, [1]]   # 60: Concatenate with scale 3 features
+  - [-1, 1, C2f, [1024, True]]   # 61: Process final features
+
+  - [[55, 58, 61], 1, Detect, [nc]]  # 62: Detect(P3, P4, P5)
   
