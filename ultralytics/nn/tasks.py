@@ -1102,6 +1102,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
          
         elif m is Attention:  # Special case for Attention
             c2 = args[0]  # Use `embedding_dim` (args[0]) as the output channel dimension
+            print(f"Attention module initialization: f={f}, args={args}")
             m_ = m(f, *args)  # Instantiate Attention with embedding_dim, num_heads, etc.
         else:
             c2 = ch[f]
