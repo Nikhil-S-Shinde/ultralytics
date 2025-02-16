@@ -92,26 +92,27 @@ backbone:
   - [[47, 48], 1, Concat, [1]] # 49 concat scale 3 (1024 channels)
 
 head:
-  # Top-down path (FPN)
-  - [49, 1, nn.Upsample, [None, 2, "nearest"]] #50: 1024 channels
-  - [[-1, 46], 1, Concat, [1]] #51: 1536 channels
-  - [-1, 1, Conv, [512, 1]] #52: Reduce channels to 512
-  - [-1, 1, C2f, [512]] #53: Process features
+  # # Top-down path (FPN)
+  # - [49, 1, nn.Upsample, [None, 2, "nearest"]] #50: 1024 channels
+  # - [[-1, 46], 1, Concat, [1]] #51: 1536 channels
+  # - [-1, 1, Conv, [512, 1]] #52: Reduce channels to 512
+  # - [-1, 1, C2f, [512]] #53: Process features
   
-  - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #54
-  - [[-1, 43], 1, Concat, [1]] #55: 512 + 256 = 768 channels
-  - [-1, 1, Conv, [256, 1]] #56: Reduce channels to 256
-  - [-1, 1, C2f, [256]] #57: Process features
+  # - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #54
+  # - [[-1, 43], 1, Concat, [1]] #55: 512 + 256 = 768 channels
+  # - [-1, 1, Conv, [256, 1]] #56: Reduce channels to 256
+  # - [-1, 1, C2f, [256]] #57: Process features
   
-  # Bottom-up path (PAN)
-  - [-1, 1, Conv, [256, 3, 2]] #58: Downsample
-  - [[-1, 53], 1, Concat, [1]] #59: 256 + 512 = 768 channels
-  - [-1, 1, Conv, [512, 1]] #60: Reduce channels to 512
-  - [-1, 1, C2f, [512, True]] #61: Process features
+  # # Bottom-up path (PAN)
+  # - [-1, 1, Conv, [256, 3, 2]] #58: Downsample
+  # - [[-1, 53], 1, Concat, [1]] #59: 256 + 512 = 768 channels
+  # - [-1, 1, Conv, [512, 1]] #60: Reduce channels to 512
+  # - [-1, 1, C2f, [512, True]] #61: Process features
   
-  - [-1, 1, Conv, [512, 3, 2]] #62: Downsample
-  - [[-1, 49], 1, Concat, [1]] #63: 512 + 1024 = 1536 channels
-  - [-1, 1, Conv, [1024, 1]] #64: Reduce channels to 1024
-  - [-1, 1, C2f, [1024, True]] #65: Process features
+  # - [-1, 1, Conv, [512, 3, 2]] #62: Downsample
+  # - [[-1, 49], 1, Concat, [1]] #63: 512 + 1024 = 1536 channels
+  # - [-1, 1, Conv, [1024, 1]] #64: Reduce channels to 1024
+  # - [-1, 1, C2f, [1024, True]] #65: Process features
   
-  - [[57, 61, 65], 1, Detect, [nc]] #66: Detection head
+  # - [[57, 61, 65], 1, Detect, [nc]] #66: Detection head
+  - [[47, 48, 49], 1, Detect, [nc]] #66: Detection head
