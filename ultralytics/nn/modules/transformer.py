@@ -491,14 +491,24 @@ class Attention(nn.Module):
             torch.Size([1, 100, 256])
         """
         super().__init__()
-        self.f = f  # Store input indices for q, k, v
+    
+        # Type checking to prevent argument confusion
+        assert isinstance(f, (list, int)), f"f must be list or int, got {type(f)}"
+        assert isinstance(embedding_dim, int), f"embedding_dim must be int, got {type(embedding_dim)}"
+        assert isinstance(num_heads, int), f"num_heads must be int, got {type(num_heads)}"
+        
+        self.f = f
         self.embedding_dim = embedding_dim
         self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
-        self.internal_dim = self.embedding_dim  # Use embedding_dim directly
+        self.internal_dim = embedding_dim
         self.num_heads = num_heads
-        print(f"Debug: f={f}, embedding_dim={embedding_dim}, internal_dim={self.internal_dim}, num_heads={num_heads}, kv_in_dim={kv_in_dim}")
-        assert self.internal_dim % num_heads == 0, f"num_heads ({num_heads}) must divide embedding_dim ({self.internal_dim})"
-
+        
+        print(f"Debug: f={f}, embedding_dim={embedding_dim}, internal_dim={self.internal_dim}, "
+              f"num_heads={num_heads}, kv_in_dim={kv_in_dim}")
+        
+        assert self.internal_dim % num_heads == 0, \
+            f"num_heads ({num_heads}) must divide embedding_dim ({self.internal_dim})"
+    
         # Define the projection layers
         self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
         self.k_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
