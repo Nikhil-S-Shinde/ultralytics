@@ -1202,14 +1202,11 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                     args[j] = locals()[a] if a in locals() else ast.literal_eval(a)
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
 
-        if m is MultiHeadAttention:
-            # Specific handling for MultiHeadAttention
-            assert len(f) == 3, f'MultiHeadAttention requires 3 input indices, got {len(f)}'
-            c2 = args[0]  # embed_dim will be the output dimension
-            
-            if verbose:
-                print(f"MultiHeadAttention: query_dim={ch[f[0]]}, key/value_dim={ch[f[1]]}, "
-                      f"embed_dim={args[0]}, num_heads={args[1]}, kdim={args[2]}")
+        elif m is MultiHeadAttention:
+            print(f"Parse model debug: f={f}, args={args}")
+            # Combine f and args into a single args list
+            args = [f]+list(args)
+            # m_ = torch.nn.Sequential(*(m(*args) for _ in range(n))) if n > 1 else m(*args)
         
         if m in base_modules:
             c1, c2 = ch[f], args[0]
