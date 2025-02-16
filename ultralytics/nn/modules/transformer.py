@@ -538,10 +538,12 @@ class DeformableTransformerDecoder(nn.Module):
 #         output = self.out_proj(attn_output)  # (B, Nq, embedding_dim)
 
 #         return output
+
 class MultiHeadAttention(nn.Module):
     def __init__(self, indices, embedding_dim, num_heads, kv_in_dim=None):
         super().__init__()
         self.f = indices  # indices for [query, key, value]
+        print(f"Initializing MultiHeadAttention with indices {indices}")  # Debug print
         self.embedding_dim = embedding_dim
         self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
         self.num_heads = num_heads
@@ -582,12 +584,19 @@ class MultiHeadAttention(nn.Module):
         """
         # Get saved outputs
         outputs = args[0] if args else []
+        print(f"\nMultiHeadAttention layer {self.i} forward pass:")
+        print(f"Looking for indices: {self.f}")
+        print(f"Available outputs: {[i for i, out in enumerate(outputs) if out is not None]}")
         
         # Get q, k, v from the stored indices
         try:
             q = outputs[self.f[0]]
             k = outputs[self.f[1]]
             v = outputs[self.f[2]]
+            print(f"Successfully retrieved tensors:")
+            print(f"q shape: {q.shape}")
+            print(f"k shape: {k.shape}")
+            print(f"v shape: {v.shape}")
         except IndexError:
             print(f"Error accessing indices {self.f} from outputs list of length {len(outputs)}")
             print(f"Available indices: {list(range(len(outputs)))}")
