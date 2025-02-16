@@ -459,57 +459,37 @@ class MultiHeadAttention(nn.Module):
         torch.Size([1, 100, 256])
     """
 
-    def __init__(
-        self,
-        f: list,
-        embedding_dim: int,
-        num_heads: int,
-        downsample_rate: int = 1,
-        kv_in_dim: int = None,
-    ) -> None:
-        """
-        Initializes the Attention module with specified dimensions and settings.
-
-        This class implements a multi-head attention mechanism with optional downsampling of the internal
-        dimension for queries, keys, and values.
-
+    def __init__(self, indices, embedding_dim, num_heads, kv_in_dim=None):
+         """
         Args:
-            embedding_dim (int): Dimensionality of input embeddings.
-            num_heads (int): Number of attention heads.
-            downsample_rate (int): Factor by which internal dimensions are downsampled. Defaults to 1.
-            kv_in_dim (int | None): Dimensionality of key and value inputs. If None, uses embedding_dim.
-
-        Raises:
-            AssertionError: If num_heads does not evenly divide the internal dim (embedding_dim / downsample_rate).
-
-        Examples:
-            >>> attn = Attention(embedding_dim=256, num_heads=8, downsample_rate=2)
-            >>> q = torch.randn(1, 100, 256)
-            >>> k = v = torch.randn(1, 50, 256)
-            >>> output = attn(q, k, v)
-            >>> print(output.shape)
-            torch.Size([1, 100, 256])
+            indices (list): List of indices for query, key, value tensors
+            embedding_dim (int): Dimension of embeddings
+            num_heads (int): Number of attention heads
+            kv_in_dim (int, optional): Dimension of key/value inputs
         """
-         # Type checking
         super().__init__()
-        assert isinstance(f, list), f"f must be list, got {type(f)}"
-        assert len(f) == 3, f"f must contain 3 indices for [query, key, value], got {len(f)}"
+            
+        # Type checking
+        assert isinstance(indices, list), f"indices must be list, got {type(indices)}"
+        assert len(indices) == 3, f"indices must contain 3 indices for [query, key, value], got {len(indices)}"
         assert isinstance(embedding_dim, int), f"embedding_dim must be int, got {type(embedding_dim)}"
         assert isinstance(num_heads, int), f"num_heads must be int, got {type(num_heads)}"
-        
-        self.f = f  # Save indices for forward pass
+            
+        # Store parameters
+        self.indices = indices  # Save indices for forward pass
         self.embedding_dim = embedding_dim
         self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
         self.internal_dim = embedding_dim
         self.num_heads = num_heads
-        
-        print(f"Attention Init: f={f}, embedding_dim={embedding_dim}, "
-              f"num_heads={num_heads}, kv_in_dim={self.kv_in_dim}")
-        
+            
+        # Validate dimensions
         assert self.internal_dim % num_heads == 0, \
             f"num_heads ({num_heads}) must divide embedding_dim ({self.internal_dim})"
-    
-        # Projection layers
+            
+        print(f"Attention Init: indices={indices}, embedding_dim={embedding_dim}, "
+                f"num_heads={num_heads}, kv_in_dim={self.kv_in_dim}")
+        
+        # Create projection layers
         self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
         self.k_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
         self.v_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
