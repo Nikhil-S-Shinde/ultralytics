@@ -2,7 +2,7 @@ nc: 2 # number of classes
 scales: # model compound scaling constants, i.e. 'model=yolov8n.yaml' will call yolov8.yaml with scale 'n'
   # [depth, width, max_channels]
   # n: [0.33, 0.25, 1024] # YOLOv8n summary: 225 layers,  3157200 parameters,  3157184 gradients,   8.9 GFLOPs
-  s: [0.33, 0.50, 1024] # YOLOv8s summary: 225 layers, 11166560 parameters, 11166544 gradients,  28.8 GFLOPs
+  # s: [0.33, 0.50, 1024] # YOLOv8s summary: 225 layers, 11166560 parameters, 11166544 gradients,  28.8 GFLOPs
   # m: [0.67, 0.75, 768] # YOLOv8m summary: 295 layers, 25902640 parameters, 25902624 gradients,  79.3 GFLOPs
   # l: [1.00, 1.00, 512] # YOLOv8l summary: 365 layers, 43691520 parameters, 43691504 gradients, 165.7 GFLOPs
   # x: [1.00, 1.25, 512] # YOLOv8x summary: 365 layers, 68229648 parameters, 68229632 gradients, 258.5 GFLOPs
@@ -12,64 +12,92 @@ backbone:
   
   # CNN track
   - [0, 1, TorchVision, [960, mobilenet_v3_large, "DEFAULT", True, 2, True]]  # 1
-  - [-1, 1, Index, [40, 7]] #2 multiscale 1 (b, c, h, w)
-  - [1, 1, Index, [112, 13]] #3 multicale 2 (b, c, h, w)
+  - [-1, 1, Index, [40, 7]] #2 multiscale 1
+  - [1, 1, Index, [112, 13]] #3 multicale 2
   - [1, 1, Index, [960, 17]] #4
-  - [-1, 1, SPPF, [960, 5]] #5 multiscale 3 (b, c, h, w)
+  - [-1, 1, SPPF, [960, 5]] #5 multiscale 3
   
   # Swin track
   - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] #6
-  - [-1, 1, Index, [192 ,4]] #7 (b, h, w, c)
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #8 multiscale 1 (b, c, h, w)
+  - [-1, 1, Index, [192 ,4]] #7
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #8 multiscale 1
   - [6, 1, Index, [384, 6]] #9
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #10 multiscale 2 (b, c, h, w)
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #10 multiscale 2
   - [6, 1, Index, [768, 9]] #11
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #12 
-  - [-1, 1, SPPF, [768, 5]] #13 multiscale 3 (b, c, h, w)
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #12
+  - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
 
-  # cross attention
-  # transformer features - query
-  - [8, 1, nn.Conv2d, [192, 64, 1, 1, 0]] # 14 Projection. embed dims - 64
-  - [-1, 1, nn.Flatten, [2, -1]] # 15 reshape (b, embed_dim, h, w) to (b, embed_dim, h*w)
-  - [-1, 1, torchvision.ops.Permute, [[2, 0, 1]]] # 16 Permute to get it into multi head attention acceptable format (seq, b, embed_dim)
-  
-  # CNN features - key
-  - [2, 1, nn.Conv2d, [40, 64, 1, 1, 0]] # 17 Projection. embed dims - 64
-  - [-1, 1, nn.Flatten, [2, -1]] # 18 reshape (b, embed_dim, h, w) to (b, embed_dim, h*w)
-  - [-1, 1, torchvision.ops.Permute, [[2, 0, 1]]] # 19 Permute to get it into multi head attention acceptable format
-  
-  #CNN features - value
-  - [2, 1, nn.Conv2d, [40, 64, 1, 1, 0]] # 20 Projection. value dims - 64
-  - [-1, 1, nn.Flatten, [2, -1]] # 21 reshape (b, value_dim, h, w) to (b, value_dim, h*w)
-  - [-1, 1, torchvision.ops.Permute, [[2, 0, 1]]] # 22 Permute to get it into multi head attention acceptable format
+  # Prepare CNN features for Attention
+  - [2, 1, Conv, [64, 1]]  # 14 Reduce CNN channels for scale 1, Adjust the number of output channels as needed (e.g., C2 // 4)
+  - [-1, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 15 B, H, W, C
+  - [-1, 1, nn.Flatten, [1, 2]]      # 16 Flatten H and W dimensions (B, H*W, C)
 
-  #Multi head attention (Output - (h*w, b, value_dims))
-  - [[16, 19, 22], 1, MultiHeadAttention, [64, 2]] #23
+  # Prepare Swin features for Attention
+  - [8, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 17 B, H, W, C
+  - [-1, 1, nn.Flatten, [1, 2]]      # 18 Flatten H and W dimensions (B, H*W, C)
 
-  #post process
-  - [23, 1, torchvision.ops.Permute, [[1, 2, 0]]] # 24 order (h*w, b, val_dim) to (b, val_dim, h*w)
-  - [-1, 1, nn.Unflatten, [2, [80, 80]]] # 25 bring back spatial dims (b, val_dims, h*w) -> (b, val_dims, h, w) ENSURE SHAPE
-  
+  # Cross-Attention Modules (Swin attends to CNN)
+  - [[18, 16, 16], 1, Attention, [192, 8, 64]]  # 19 Swin (Q) attends to CNN (K, V), output channels = 192, kv_in_dim = 64
+
+  # Reshape the attended features back to the original shape
+  - [19, 1, nn.Linear, [192]] # 20 Transform attended swin features to output channel 192
+  - [-1, 1, nn.Unflatten, [1, (80, 80)]] # 21 Unflatten back to (B, 80, 80, 192)
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 22: Permute back to (B, 192, 80, 80)
+
+  # Prepare CNN features for Attention
+  - [3, 1, Conv, [128, 1]]  # 23 Reduce CNN channels for scale 2, Adjust the number of output channels as needed (e.g., C2 // 4)
+  - [-1, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 24 B, H, W, C
+  - [-1, 1, nn.Flatten, [1, 2]]      # 25 Flatten H and W dimensions (B, H*W, C)
+
+  # Prepare Swin features for Attention
+  - [10, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 26 B, H, W, C
+  - [-1, 1, nn.Flatten, [1, 2]]      # 27 Flatten H and W dimensions (B, H*W, C)
+
+  # Cross-Attention Modules (Swin attends to CNN)
+  - [[27, 25, 25], 1, Attention, [384, 8, 128]]  # 28 Swin (Q) attends to CNN (K, V), output channels = 384, kv_in_dim = 128
+
+  # Reshape the attended features back to the original shape
+  - [28, 1, nn.Linear, [384]] # 29 Transform attended swin features to output channel 384
+  - [-1, 1, nn.Unflatten, [1, (40, 40)]] # 30 Unflatten back to (B, 40, 40, 384)
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 31: Permute back to (B, 384, 40, 40)
+
+  # Prepare CNN features for Attention
+  - [5, 1, Conv, [256, 1]]  # 32 Reduce CNN channels for scale 3, Adjust the number of output channels as needed (e.g., C2 // 4)
+  - [-1, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 33 B, H, W, C
+  - [-1, 1, nn.Flatten, [1, 2]]      # 34 Flatten H and W dimensions (B, H*W, C)
+
+  # Prepare Swin features for Attention
+  - [12, 1, torchvision.ops.Permute, [[0, 2, 3, 1]]] # 35 B, H, W, C
+  - [-1, 1, nn.Flatten, [1, 2]]      # 36 Flatten H and W dimensions (B, H*W, C)
+
+  # Cross-Attention Modules (Swin attends to CNN)
+  - [[36, 34, 34], 1, Attention, [768, 8, 256]]  # 37 Swin (Q) attends to CNN (K, V), output channels = 768, kv_in_dim = 256
+
+  # Reshape the attended features back to the original shape
+  - [37, 1, nn.Linear, [768]] # 38 Transform attended swin features to output channel 768
+  - [-1, 1, nn.Unflatten, [1, (20, 20)]] # 39 Unflatten back to (B, 20, 20, 768)
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]  # 40: Permute back to (B, 768, 20, 20)
+
   # Concat features along channel dimension
-  - [[8, 25], 1, Concat, [1]] # 26
-  # - [[2, 8], 1, Concat, [1]] # 24 concat scale 1
-  - [[3, 10], 1, Concat, [1]] #27 concat scale 2
-  - [[5, 13], 1, Concat, [1]] #28 concat scale 3
-head:
-  - [28, 1, nn.Upsample, [None, 2, "nearest"]] #29 upsample 16 to match H and W with 25
-  - [[-1, 27], 1, Concat, [1]] # 30  27+25
-  - [-1, 1, C2f, [512]] # 31
-  - [31, 1, nn.Upsample, [None, 2, "nearest"]] #32 upsample 29 to match H and W
-  - [[-1, 26], 1, Concat, [1]] # 33  30+24
-  - [-1, 1, C2f, [256]] #34
-  # Bottom-Up Pathway (from Scale 1 to Scale 3)
-  - [34, 1, Conv, [256, 3, 2]]    # 35: Downsample (256, 80, 80) -> (256, 40, 40)
-  - [[-1, 31], 1, Concat, [1]]   # 36: Concatenate with upsampled Scale 2 output (512, 40, 40) + (256, 40, 40) -> (768, 40, 40)
-  - [-1, 1, C2f, [512, True]]    # 37: C2f,  (768, 40, 40) -> (512, 40, 40) (P4/16-medium)
+  - [[22, 2], 1, Concat, [1]] # 41 concat scale 1
+  - [[31, 3], 1, Concat, [1]] # 42 concat scale 2
+  - [[40, 5], 1, Concat, [1]] # 43 concat scale 3
 
-  - [37, 1, Conv, [512, 3, 2]]    # 38: Downsample (512, 40, 40) -> (512, 20, 20)
-  - [[-1, 28], 1, Concat, [1]]   # 39: Concatenate with Scale 3 (1728, 20, 20) + (512, 20, 20) -> (2240, 20, 20)
-  - [-1, 1, C2f, [1024, True]]   # 40: C2f, (2240, 20, 20) -> (1024, 20, 20) (P5/32-large)
+head:
+  - [43, 1, nn.Upsample, [None, 2, "nearest"]] #44 upsample 43 to match H and W with 42
+  - [[-1, 42], 1, Concat, [1]] # 45  44+42
+  - [-1, 1, C2f, [512]] #46
+  - [46, 1, nn.Upsample, [None, 2, "nearest"]] #47 upsample 46 to match H and W
+  - [[-1, 41], 1, Concat, [1]] # 48  47+41
+  - [-1, 1, C2f, [256]] #49
+  # Bottom-Up Pathway (from Scale 1 to Scale 3)
+  - [49, 1, Conv, [256, 3, 2]]    # 50: Downsample (256, 80, 80) -> (256, 40, 40)
+  - [[-1, 46], 1, Concat, [1]]   # 51: Concatenate with upsampled Scale 2 output (512, 40, 40) + (256, 40, 40) -> (768, 40, 40)
+  - [-1, 1, C2f, [512, True]]    # 52: C2f,  (768, 40, 40) -> (512, 40, 40) (P4/16-medium)
+
+  - [52, 1, Conv, [512, 3, 2]]    # 53: Downsample (512, 40, 40) -> (512, 20, 20)
+  - [[-1, 43], 1, Concat, [1]]   # 54: Concatenate with Scale 3 (1728, 20, 20) + (512, 20, 20) -> (2240, 20, 20)
+  - [-1, 1, C2f, [1024, True]]   # 55: C2f, (2240, 20, 20) -> (1024, 20, 20) (P5/32-large)
   # - [-1, 1, nn.Identity, []]
-  - [[34, 37, 40], 1, Detect, [nc]]  # 41: Detect(P3, P4, P5)
+  - [[49, 52, 55], 1, Detect, [nc]]  # 56: Detect(P3, P4, P5)
   
