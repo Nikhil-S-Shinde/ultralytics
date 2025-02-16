@@ -555,7 +555,12 @@ class MultiHeadAttention(nn.Module):
         self.k_proj = nn.Linear(kv_in_dim, embedding_dim)
         self.v_proj = nn.Linear(kv_in_dim, embedding_dim)
         self.out_proj = nn.Linear(embedding_dim, embedding_dim)
-    
+        
+        # Save for model summary
+        self.i = None  # Layer index
+        self.f = indices  # From layers
+        self.type = 'MultiHeadAttention'
+        
     @staticmethod
     def _separate_heads(x, num_heads):
         b, n, c = x.shape
@@ -568,12 +573,26 @@ class MultiHeadAttention(nn.Module):
         x = x.transpose(1, 2)
         return x.reshape(b, n_tokens, n_heads * c_per_head)
     
-    def forward(self, outputs):
-        # Get q, k, v from the stored indices
-        q = outputs[self.f[0]]  # Already in shape (B, H*W, C)
-        k = outputs[self.f[1]]
-        v = outputs[self.f[2]]
+    def forward(self, x, *args):
+        """
+        Modified forward pass to work with YOLO architecture
+        Args:
+            x: Current input tensor
+            *args: List of all saved outputs
+        """
+        # Get saved outputs
+        outputs = args[0] if args else []
         
+        # Get q, k, v from the stored indices
+        try:
+            q = outputs[self.f[0]]
+            k = outputs[self.f[1]]
+            v = outputs[self.f[2]]
+        except IndexError:
+            print(f"Error accessing indices {self.f} from outputs list of length {len(outputs)}")
+            print(f"Available indices: {list(range(len(outputs)))}")
+            raise
+            
         # Project q, k, v
         q = self.q_proj(q)
         k = self.k_proj(k)
