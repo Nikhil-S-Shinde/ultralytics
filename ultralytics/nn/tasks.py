@@ -1201,31 +1201,32 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 with contextlib.suppress(ValueError):
                     args[j] = locals()[a] if a in locals() else ast.literal_eval(a)
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
+
+        if m is MultiHeadAttention:
+            # Specific handling for MultiHeadAttention
+            assert len(f) == 3, f'MultiHeadAttention requires 3 input indices, got {len(f)}'
+            c2 = args[0]  # embed_dim will be the output dimension
+            
+            if verbose:
+                print(f"MultiHeadAttention: query_dim={ch[f[0]]}, key/value_dim={ch[f[1]]}, "
+                      f"embed_dim={args[0]}, num_heads={args[1]}, kdim={args[2]}")
+        
         if m in base_modules:
-            if m is MultiHeadAttention:
-                assert len(f) == 3, f'MultiHeadAttention requires 3 input indices, got {len(f)}'
-                c2 = args[0]  # embed_dim will be the output dimension
-                
-                if verbose:
-                    print(f"MultiHeadAttention: query_dim={ch[f[0]]}, key/value_dim={ch[f[1]]}, "
-                          f"embed_dim={args[0]}, num_heads={args[1]}, kdim={args[2]}")
-                
-            else:
-                c1, c2 = ch[f], args[0]
-                if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
-                    c2 = make_divisible(min(c2, max_channels) * width, 8)
-                if m is C2fAttn:  # set 1) embed channels and 2) num heads
-                    args[1] = make_divisible(min(args[1], max_channels // 2) * width, 8)
-                    args[2] = int(max(round(min(args[2], max_channels // 2 // 32)) * width, 1) if args[2] > 1 else args[2])
+            c1, c2 = ch[f], args[0]
+            if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
+                c2 = make_divisible(min(c2, max_channels) * width, 8)
+            if m is C2fAttn:  # set 1) embed channels and 2) num heads
+                args[1] = make_divisible(min(args[1], max_channels // 2) * width, 8)
+                args[2] = int(max(round(min(args[2], max_channels // 2 // 32)) * width, 1) if args[2] > 1 else args[2])
     
-                args = [c1, c2, *args[1:]]
-                if m in repeat_modules:
-                    args.insert(2, n)  # number of repeats
-                    n = 1
-                if m is C3k2:  # for M/L/X sizes
-                    legacy = False
-                    if scale in "mlx":
-                        args[3] = True
+            args = [c1, c2, *args[1:]]
+            if m in repeat_modules:
+                args.insert(2, n)  # number of repeats
+                n = 1
+            if m is C3k2:  # for M/L/X sizes
+                legacy = False
+                if scale in "mlx":
+                    args[3] = True
         elif m is AIFI:
             args = [ch[f], *args]
         elif m in frozenset({HGStem, HGBlock}):
