@@ -1045,6 +1045,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+            print(f"Concat: c2={c2}")
         elif m is CrossAttention:
             if isinstance(f[0], list):
                 query_layer, kv_layer = f[0]
