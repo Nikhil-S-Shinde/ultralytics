@@ -1102,10 +1102,11 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                          
         elif m is Attention:
             print(f"Parse model debug: f={f}, args={args}")
-            # Create a wrapper to ensure correct argument order
+            f_copy = f.copy() if isinstance(f, list) else f  # Make a copy of f
+            args_copy = args.copy()  # Make a copy of args
             def create_attention():
-                return m(f=f, embedding_dim=args[0], num_heads=args[1], kv_in_dim=args[2])
-            print(f"Creating Attention with: f={f}, embedding_dim={args[0]}, num_heads={args[1]}, kv_in_dim={args[2]}")
+                return m(f_copy, embedding_dim=args_copy[0], num_heads=args_copy[1], kv_in_dim=args_copy[2])
+            print(f"Creating Attention with: f={f_copy}, embedding_dim={args_copy[0]}, num_heads={args_copy[1]}, kv_in_dim={args_copy[2]}")
             m_ = torch.nn.Sequential(*(create_attention() for _ in range(n))) if n > 1 else create_attention()
             
         else:
