@@ -1101,18 +1101,10 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [*args[1:]]
                          
         elif m is MultiHeadAttention:
+            # Simple debug print if needed
             print(f"Parse model debug: f={f}, args={args}")
-            f_copy = f.copy() if isinstance(f, list) else [f]  # Ensure f is always a list
-            assert len(args) >= 3, f"Attention module requires at least 3 arguments, got {args}"
-            
-            # Ensure correct unpacking of arguments
-            embedding_dim, num_heads, kv_in_dim = args[0], args[1], args[2]
-            print(f"Creating Attention with: f={f_copy}, embedding_dim={embedding_dim}, num_heads={num_heads}, kv_in_dim={kv_in_dim}")
-            
-            def create_attention():
-                return m(f_copy, embedding_dim=embedding_dim, num_heads=num_heads, kv_in_dim=kv_in_dim)
-            
-            m_ = torch.nn.Sequential(*(create_attention() for _ in range(n))) if n > 1 else create_attention()
+            # Use standard YOLO parsing pattern
+            m_ = torch.nn.Sequential(*(m(f, *args) for _ in range(n))) if n > 1 else m(f, *args)
 
         m_ = torch.nn.Sequential(*(m(*args) for _ in range(n))) if n > 1 else m(*args)  # module
         t = str(m)[8:-2].replace("__main__.", "")  # module type
