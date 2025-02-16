@@ -1102,8 +1102,9 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
  
         elif m is Attention:  # Special case for Attention
             inputs = [layers[x] for x in f]  # Get the outputs of the layers specified in `f`
-            args = [inputs, *args]  # Pass inputs as the first argument to Attention
-            c2 = args[1]  # Use `embedding_dim` (args[1]) as the output channel dimension
+            embedding_dim, num_heads, kv_in_dim = args  # Unpack args
+            m_ = m(inputs, embedding_dim, num_heads, kv_in_dim)  # Instantiate Attention
+            c2 = embedding_dim  # Use `embedding_dim` as the output channel dimension
 
         else:
             c2 = ch[f]
