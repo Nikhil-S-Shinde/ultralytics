@@ -491,6 +491,7 @@ class MultiHeadAttention(nn.Module):
             torch.Size([1, 100, 256])
         """
          # Type checking
+        super().__init__()
         assert isinstance(f, list), f"f must be list, got {type(f)}"
         assert len(f) == 3, f"f must contain 3 indices for [query, key, value], got {len(f)}"
         assert isinstance(embedding_dim, int), f"embedding_dim must be int, got {type(embedding_dim)}"
