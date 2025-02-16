@@ -428,164 +428,164 @@ class DeformableTransformerDecoder(nn.Module):
 
         return torch.stack(dec_bboxes), torch.stack(dec_cls)
 
-# class MultiHeadAttention(nn.Module):
-#     """
-#     An attention layer with downscaling capability for embedding size after projection.
-
-#     This class implements a multi-head attention mechanism with the option to downsample the internal
-#     dimension of queries, keys, and values.
-
-#     Attributes:
-#         embedding_dim (int): Dimensionality of input embeddings.
-#         kv_in_dim (int): Dimensionality of key and value inputs.
-#         internal_dim (int): Internal dimension after downsampling.
-#         num_heads (int): Number of attention heads.
-#         q_proj (nn.Linear): Linear projection for queries.
-#         k_proj (nn.Linear): Linear projection for keys.
-#         v_proj (nn.Linear): Linear projection for values.
-#         out_proj (nn.Linear): Linear projection for output.
-
-#     Methods:
-#         _separate_heads: Separates input tensor into attention heads.
-#         _recombine_heads: Recombines separated attention heads.
-#         forward: Computes attention output for given query, key, and value tensors.
-
-#     Examples:
-#         >>> attn = Attention(embedding_dim=256, num_heads=8, downsample_rate=2)
-#         >>> q = torch.randn(1, 100, 256)
-#         >>> k = v = torch.randn(1, 50, 256)
-#         >>> output = attn(q, k, v)
-#         >>> print(output.shape)
-#         torch.Size([1, 100, 256])
-#     """
-
-#     def __init__(self, indices, embedding_dim, num_heads, kv_in_dim=None):
-#         """
-#         Args:
-#             indices (list): List of indices for query, key, value tensors
-#             embedding_dim (int): Dimension of embeddings
-#             num_heads (int): Number of attention heads
-#             kv_in_dim (int, optional): Dimension of key/value inputs
-#         """
-#         super().__init__()                
-#         # Type checking
-#         assert isinstance(indices, list), f"indices must be list, got {type(indices)}"
-#         assert len(indices) == 3, f"indices must contain 3 indices for [query, key, value], got {len(indices)}"
-#         assert isinstance(embedding_dim, int), f"embedding_dim must be int, got {type(embedding_dim)}"
-#         assert isinstance(num_heads, int), f"num_heads must be int, got {type(num_heads)}"
-            
-#         # Store parameters
-#         self.indices = indices  # Save indices for forward pass
-#         self.embedding_dim = embedding_dim
-#         self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
-#         self.internal_dim = embedding_dim
-#         self.num_heads = num_heads
-            
-#         # Validate dimensions
-#         assert self.internal_dim % num_heads == 0, \
-#             f"num_heads ({num_heads}) must divide embedding_dim ({self.internal_dim})"    
-#         print(f"Attention Init: indices={indices}, embedding_dim={embedding_dim}, "f"num_heads={num_heads}, kv_in_dim={self.kv_in_dim}")
-        
-#         # Create projection layers
-#         self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
-#         self.k_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
-#         self.v_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
-#         self.out_proj = nn.Linear(self.internal_dim, embedding_dim)
-        
-#     @staticmethod
-#     def _separate_heads(x: Tensor, num_heads: int) -> Tensor:
-#         """Separates the input tensor into the specified number of attention heads."""
-#         b, n, c = x.shape
-#         x = x.reshape(b, n, num_heads, c // num_heads)
-#         return x.transpose(1, 2)  # B x N_heads x N_tokens x C_per_head
-
-#     @staticmethod
-#     def _recombine_heads(x: Tensor) -> Tensor:
-#         """Recombines separated attention heads into a single tensor."""
-#         b, n_heads, n_tokens, c_per_head = x.shape
-#         x = x.transpose(1, 2)
-#         return x.reshape(b, n_tokens, n_heads * c_per_head)  # B x N_tokens x C
-
-#     def forward(self, q: Tensor, k: Tensor, v: Tensor) -> Tensor:
-#         """Applies multi-head attention to query, key, and value tensors with optional downsampling."""
-
-#        # Fetch q, k, v tensors based on stored indices
-#         q = outputs[self.f[0]]  # Query
-#         k = outputs[self.f[1]]  # Key
-#         v = outputs[self.f[2]]  # Value
-
-#         # Project q, k, v
-#         q = self.q_proj(q)
-#         k = self.k_proj(k)
-#         v = self.v_proj(v)
-
-#         # Separate into attention heads
-#         q = self._separate_heads(q, self.num_heads)
-#         k = self._separate_heads(k, self.num_heads)
-#         v = self._separate_heads(v, self.num_heads)
-
-#         # Compute attention scores
-#         d_k = q.shape[-1]  # Dim per head
-#         attn_weights = torch.softmax(q @ k.transpose(-2, -1) / math.sqrt(d_k), dim=-1)  # (B, N_heads, Nq, Nk)
-
-#         # Apply attention to values
-#         attn_output = attn_weights @ v  # (B, N_heads, Nq, C_per_head)
-
-#         # Recombine attention heads
-#         attn_output = self._recombine_heads(attn_output)  # (B, Nq, internal_dim)
-
-#         # Project output back to embedding_dim
-#         output = self.out_proj(attn_output)  # (B, Nq, embedding_dim)
-
-#         return output
-
-
 class MultiHeadAttention(nn.Module):
     """
-    Wrapper class for nn.MultiheadAttention for cross-attention between Swin and CNN features.
-    
-    Args:
-        embed_dim (int): Query embedding dimension from Swin features
-        num_heads (int): Number of attention heads
-        kdim (int): Key dimension from CNN features
+    An attention layer with downscaling capability for embedding size after projection.
+
+    This class implements a multi-head attention mechanism with the option to downsample the internal
+    dimension of queries, keys, and values.
+
+    Attributes:
+        embedding_dim (int): Dimensionality of input embeddings.
+        kv_in_dim (int): Dimensionality of key and value inputs.
+        internal_dim (int): Internal dimension after downsampling.
+        num_heads (int): Number of attention heads.
+        q_proj (nn.Linear): Linear projection for queries.
+        k_proj (nn.Linear): Linear projection for keys.
+        v_proj (nn.Linear): Linear projection for values.
+        out_proj (nn.Linear): Linear projection for output.
+
+    Methods:
+        _separate_heads: Separates input tensor into attention heads.
+        _recombine_heads: Recombines separated attention heads.
+        forward: Computes attention output for given query, key, and value tensors.
+
+    Examples:
+        >>> attn = Attention(embedding_dim=256, num_heads=8, downsample_rate=2)
+        >>> q = torch.randn(1, 100, 256)
+        >>> k = v = torch.randn(1, 50, 256)
+        >>> output = attn(q, k, v)
+        >>> print(output.shape)
+        torch.Size([1, 100, 256])
     """
-    def __init__(self, embed_dim, num_heads, kdim):
-        super().__init__()
-        self.embed_dim = embed_dim
-        self.kdim = kdim
-        self.num_heads = num_heads
-        
-        self.mha = nn.MultiheadAttention(
-            embed_dim=embed_dim,
-            num_heads=num_heads,
-            kdim=kdim,
-            vdim=kdim,
-            dropout=0.0,
-            batch_first=True
-        )
 
-    def forward(self, x):
+    def __init__(self, indices, embedding_dim, num_heads, kv_in_dim=None):
         """
-        Forward pass for the attention module.
-        
         Args:
-            x (list): List of input tensors corresponding to the 'f' indices
-                x[0]: Query tensor from Swin
-                x[1]: Key tensor from CNN 
-                x[2]: Value tensor from CNN (same as key in your case)
-        
-        Returns:
-            torch.Tensor: Attended features
+            indices (list): List of indices for query, key, value tensors
+            embedding_dim (int): Dimension of embeddings
+            num_heads (int): Number of attention heads
+            kv_in_dim (int, optional): Dimension of key/value inputs
         """
-        # In your YAML, you're using the same CNN features for key and value
-        # e.g., [16, 16] in [[18, 16, 16], 1, MultiHeadAttention, [192, 8, 64]]
-        query, key, value = x
+        super().__init__()                
+        # Type checking
+        assert isinstance(indices, list), f"indices must be list, got {type(indices)}"
+        assert len(indices) == 3, f"indices must contain 3 indices for [query, key, value], got {len(indices)}"
+        assert isinstance(embedding_dim, int), f"embedding_dim must be int, got {type(embedding_dim)}"
+        assert isinstance(num_heads, int), f"num_heads must be int, got {type(num_heads)}"
+            
+        # Store parameters
+        self.indices = indices  # Save indices for forward pass
+        self.embedding_dim = embedding_dim
+        self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
+        self.internal_dim = embedding_dim
+        self.num_heads = num_heads
+            
+        # Validate dimensions
+        assert self.internal_dim % num_heads == 0, \
+            f"num_heads ({num_heads}) must divide embedding_dim ({self.internal_dim})"    
+        print(f"Attention Init: indices={indices}, embedding_dim={embedding_dim}, "f"num_heads={num_heads}, kv_in_dim={self.kv_in_dim}")
         
-        # Apply multi-head attention
-        attn_output, _ = self.mha(query, key, value)
+        # Create projection layers
+        self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
+        self.k_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
+        self.v_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
+        self.out_proj = nn.Linear(self.internal_dim, embedding_dim)
         
-        return attn_output
+    @staticmethod
+    def _separate_heads(x: Tensor, num_heads: int) -> Tensor:
+        """Separates the input tensor into the specified number of attention heads."""
+        b, n, c = x.shape
+        x = x.reshape(b, n, num_heads, c // num_heads)
+        return x.transpose(1, 2)  # B x N_heads x N_tokens x C_per_head
 
-    def extra_repr(self) -> str:
-        """String representation of module."""
-        return f'embed_dim={self.embed_dim}, num_heads={self.num_heads}, kdim={self.kdim}'
+    @staticmethod
+    def _recombine_heads(x: Tensor) -> Tensor:
+        """Recombines separated attention heads into a single tensor."""
+        b, n_heads, n_tokens, c_per_head = x.shape
+        x = x.transpose(1, 2)
+        return x.reshape(b, n_tokens, n_heads * c_per_head)  # B x N_tokens x C
+
+    def forward(self, q: Tensor, k: Tensor, v: Tensor) -> Tensor:
+        """Applies multi-head attention to query, key, and value tensors with optional downsampling."""
+
+       # Fetch q, k, v tensors based on stored indices
+        q = outputs[self.f[0]]  # Query
+        k = outputs[self.f[1]]  # Key
+        v = outputs[self.f[2]]  # Value
+
+        # Project q, k, v
+        q = self.q_proj(q)
+        k = self.k_proj(k)
+        v = self.v_proj(v)
+
+        # Separate into attention heads
+        q = self._separate_heads(q, self.num_heads)
+        k = self._separate_heads(k, self.num_heads)
+        v = self._separate_heads(v, self.num_heads)
+
+        # Compute attention scores
+        d_k = q.shape[-1]  # Dim per head
+        attn_weights = torch.softmax(q @ k.transpose(-2, -1) / math.sqrt(d_k), dim=-1)  # (B, N_heads, Nq, Nk)
+
+        # Apply attention to values
+        attn_output = attn_weights @ v  # (B, N_heads, Nq, C_per_head)
+
+        # Recombine attention heads
+        attn_output = self._recombine_heads(attn_output)  # (B, Nq, internal_dim)
+
+        # Project output back to embedding_dim
+        output = self.out_proj(attn_output)  # (B, Nq, embedding_dim)
+
+        return output
+
+
+# class MultiHeadAttention(nn.Module):
+#     """
+#     Wrapper class for nn.MultiheadAttention for cross-attention between Swin and CNN features.
+    
+#     Args:
+#         embed_dim (int): Query embedding dimension from Swin features
+#         num_heads (int): Number of attention heads
+#         kdim (int): Key dimension from CNN features
+#     """
+#     def __init__(self, embed_dim, num_heads, kdim):
+#         super().__init__()
+#         self.embed_dim = embed_dim
+#         self.kdim = kdim
+#         self.num_heads = num_heads
+        
+#         self.mha = nn.MultiheadAttention(
+#             embed_dim=embed_dim,
+#             num_heads=num_heads,
+#             kdim=kdim,
+#             vdim=kdim,
+#             dropout=0.0,
+#             batch_first=True
+#         )
+
+#     def forward(self, x):
+#         """
+#         Forward pass for the attention module.
+        
+#         Args:
+#             x (list): List of input tensors corresponding to the 'f' indices
+#                 x[0]: Query tensor from Swin
+#                 x[1]: Key tensor from CNN 
+#                 x[2]: Value tensor from CNN (same as key in your case)
+        
+#         Returns:
+#             torch.Tensor: Attended features
+#         """
+#         # In your YAML, you're using the same CNN features for key and value
+#         # e.g., [16, 16] in [[18, 16, 16], 1, MultiHeadAttention, [192, 8, 64]]
+#         query, key, value = x
+        
+#         # Apply multi-head attention
+#         attn_output, _ = self.mha(query, key, value)
+        
+#         return attn_output
+
+#     def extra_repr(self) -> str:
+#         """String representation of module."""
+#         return f'embed_dim={self.embed_dim}, num_heads={self.num_heads}, kdim={self.kdim}'
