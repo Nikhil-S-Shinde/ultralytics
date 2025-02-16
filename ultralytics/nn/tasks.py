@@ -1167,6 +1167,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             PSA,
             SCDown,
             C2fCIB,
+            MultiHeadAttention,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1201,21 +1202,30 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                     args[j] = locals()[a] if a in locals() else ast.literal_eval(a)
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in base_modules:
-            c1, c2 = ch[f], args[0]
-            if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
-                c2 = make_divisible(min(c2, max_channels) * width, 8)
-            if m is C2fAttn:  # set 1) embed channels and 2) num heads
-                args[1] = make_divisible(min(args[1], max_channels // 2) * width, 8)
-                args[2] = int(max(round(min(args[2], max_channels // 2 // 32)) * width, 1) if args[2] > 1 else args[2])
-
-            args = [c1, c2, *args[1:]]
-            if m in repeat_modules:
-                args.insert(2, n)  # number of repeats
-                n = 1
-            if m is C3k2:  # for M/L/X sizes
-                legacy = False
-                if scale in "mlx":
-                    args[3] = True
+            if m is MultiHeadAttention:
+                assert len(f) == 3, f'MultiHeadAttention requires 3 input indices, got {len(f)}'
+                c2 = args[0]  # embed_dim will be the output dimension
+                
+                if verbose:
+                    print(f"MultiHeadAttention: query_dim={ch[f[0]]}, key/value_dim={ch[f[1]]}, "
+                          f"embed_dim={args[0]}, num_heads={args[1]}, kdim={args[2]}")
+                
+            else:
+                c1, c2 = ch[f], args[0]
+                if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
+                    c2 = make_divisible(min(c2, max_channels) * width, 8)
+                if m is C2fAttn:  # set 1) embed channels and 2) num heads
+                    args[1] = make_divisible(min(args[1], max_channels // 2) * width, 8)
+                    args[2] = int(max(round(min(args[2], max_channels // 2 // 32)) * width, 1) if args[2] > 1 else args[2])
+    
+                args = [c1, c2, *args[1:]]
+                if m in repeat_modules:
+                    args.insert(2, n)  # number of repeats
+                    n = 1
+                if m is C3k2:  # for M/L/X sizes
+                    legacy = False
+                    if scale in "mlx":
+                        args[3] = True
         elif m is AIFI:
             args = [ch[f], *args]
         elif m in frozenset({HGStem, HGBlock}):
@@ -1230,6 +1240,11 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+        elif isinstance(f, list):
+            # Handle cases where f is a list but not handled by specific module types
+            c2 = ch[f[0]]  # Take the first input's channels
+            print(f"Warning: using first input channel dimension for module {m}: {c2}")
+            
         elif m in frozenset({Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}):
             args.append([ch[x] for x in f])
             if m is Segment:
@@ -1248,17 +1263,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c2 = args[0]
             c1 = ch[f]
             args = [*args[1:]]
-        if m is MultiHeadAttention:
-            # For MultiHeadAttention, f should be a list of 3 indices [query_idx, key_idx, value_idx]
-            # args contains [embed_dim, num_heads, kdim]
-            assert len(f) == 3, f'MultiHeadAttention requires 3 input indices, got {len(f)}'
-                
-            # Query dimension comes from Swin features (first index in f)
-            # Key/Value dimensions come from CNN features (second/third indices in f)
-            c2 = args[0]  # embed_dim will be the output dimension
-                
-            if verbose:
-                print(f"MultiHeadAttention: query_dim={ch[f[0]]}, key/value_dim={ch[f[1]]}, "f"embed_dim={args[0]}, num_heads={args[1]}, kdim={args[2]}")
         else:
             c2 = ch[f]
 
