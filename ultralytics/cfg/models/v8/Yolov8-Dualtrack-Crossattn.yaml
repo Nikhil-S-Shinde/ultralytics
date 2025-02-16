@@ -92,22 +92,26 @@ backbone:
   - [[47, 48], 1, Concat, [1]] # 49 concat scale 3 (1024 channels)
 
 head:
-  - [49, 1, nn.Upsample, [None, 2, "nearest"]] #50 upsample scale 3 to match scale 2
-  - [[-1, 46], 1, Concat, [1]] # 51 concat upsampled scale 3 with scale 2 (1024 + 512 = 1536 channels)
-  - [-1, 1, C2f, [512, False, 1536]] #52 process combined features (specify input channels)
-
-  - [52, 1, nn.Upsample, [None, 2, "nearest"]] #53 upsample to match scale 1
-  - [[-1, 43], 1, Concat, [1]] # 54 concat with scale 1 (512 + 256 = 768 channels)
-  - [-1, 1, C2f, [256, False, 768]] #55 process combined features (specify input channels)
-
-  # Bottom-Up Pathway (from Scale 1 to Scale 3)
-  - [55, 1, Conv, [256, 3, 2]]    # 56: Downsample to scale 2
-  - [[-1, 52], 1, Concat, [1]]   # 57: Concatenate with scale 2 features (256 + 512 = 768 channels)
-  - [-1, 1, C2f, [512, True, 768]]    # 58: Process combined features (specify input channels)
-
-  - [58, 1, Conv, [512, 3, 2]]    # 59: Downsample to scale 3
-  - [[-1, 49], 1, Concat, [1]]   # 60: Concatenate with scale 3 features (512 + 1024 = 1536 channels)
-  - [-1, 1, C2f, [1024, True, 1536]]   # 61: Process final features (specify input channels)
-
-  - [[55, 58, 61], 1, Detect, [nc]]  # 62: Detect(P3, P4, P5)
+  # Top-down path (FPN)
+  - [49, 1, nn.Upsample, [None, 2, "nearest"]] #50: 1024 channels
+  - [[-1, 46], 1, Concat, [1]] #51: 1536 channels
+  - [-1, 1, Conv, [512, 1]] #52: Reduce channels to 512
+  - [-1, 1, C2f, [512]] #53: Process features
   
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #54
+  - [[-1, 43], 1, Concat, [1]] #55: 512 + 256 = 768 channels
+  - [-1, 1, Conv, [256, 1]] #56: Reduce channels to 256
+  - [-1, 1, C2f, [256]] #57: Process features
+  
+  # Bottom-up path (PAN)
+  - [-1, 1, Conv, [256, 3, 2]] #58: Downsample
+  - [[-1, 53], 1, Concat, [1]] #59: 256 + 512 = 768 channels
+  - [-1, 1, Conv, [512, 1]] #60: Reduce channels to 512
+  - [-1, 1, C2f, [512, True]] #61: Process features
+  
+  - [-1, 1, Conv, [512, 3, 2]] #62: Downsample
+  - [[-1, 49], 1, Concat, [1]] #63: 512 + 1024 = 1536 channels
+  - [-1, 1, Conv, [1024, 1]] #64: Reduce channels to 1024
+  - [-1, 1, C2f, [1024, True]] #65: Process features
+  
+  - [[57, 61, 65], 1, Detect, [nc]] #66: Detection head
