@@ -461,6 +461,7 @@ class Attention(nn.Module):
 
     def __init__(
         self,
+        f: list,
         embedding_dim: int,
         num_heads: int,
         downsample_rate: int = 1,
@@ -490,12 +491,14 @@ class Attention(nn.Module):
             torch.Size([1, 100, 256])
         """
         super().__init__()
+        self.f = f  # Store input indices for q, k, v
         self.embedding_dim = embedding_dim
         self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
         self.internal_dim = embedding_dim // downsample_rate
         self.num_heads = num_heads
         assert self.internal_dim % num_heads == 0, "num_heads must divide embedding_dim."
 
+        # Define the projection layers
         self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
         self.k_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
         self.v_proj = nn.Linear(self.kv_in_dim, self.internal_dim)
@@ -517,23 +520,33 @@ class Attention(nn.Module):
 
     def forward(self, q: Tensor, k: Tensor, v: Tensor) -> Tensor:
         """Applies multi-head attention to query, key, and value tensors with optional downsampling."""
-        # Input projections
+
+       # Fetch q, k, v tensors based on stored indices
+        q = outputs[self.f[0]]  # Query
+        k = outputs[self.f[1]]  # Key
+        v = outputs[self.f[2]]  # Value
+
+        # Project q, k, v
         q = self.q_proj(q)
         k = self.k_proj(k)
         v = self.v_proj(v)
 
-        # Separate into heads
+        # Separate into attention heads
         q = self._separate_heads(q, self.num_heads)
         k = self._separate_heads(k, self.num_heads)
         v = self._separate_heads(v, self.num_heads)
 
-        # Attention
-        _, _, _, c_per_head = q.shape
-        attn = q @ k.permute(0, 1, 3, 2)  # B x N_heads x N_tokens x N_tokens
-        attn = attn / math.sqrt(c_per_head)
-        attn = torch.softmax(attn, dim=-1)
+        # Compute attention scores
+        d_k = q.shape[-1]  # Dim per head
+        attn_weights = torch.softmax(q @ k.transpose(-2, -1) / math.sqrt(d_k), dim=-1)  # (B, N_heads, Nq, Nk)
 
-        # Get output
-        out = attn @ v
-        out = self._recombine_heads(out)
-        return self.out_proj(out)
+        # Apply attention to values
+        attn_output = attn_weights @ v  # (B, N_heads, Nq, C_per_head)
+
+        # Recombine attention heads
+        attn_output = self._recombine_heads(attn_output)  # (B, Nq, internal_dim)
+
+        # Project output back to embedding_dim
+        output = self.out_proj(attn_output)  # (B, Nq, embedding_dim)
+
+        return output
