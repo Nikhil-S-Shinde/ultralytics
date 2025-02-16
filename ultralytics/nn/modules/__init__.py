@@ -87,6 +87,7 @@ from .transformer import (
     TransformerBlock,
     TransformerEncoderLayer,
     TransformerLayer,
+    Attention,
 )
 
 __all__ = (
@@ -162,4 +163,5 @@ __all__ = (
     "TorchVision",
     "Index",
     "CrossAttention",
+    "Attention",
 )
