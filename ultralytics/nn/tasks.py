@@ -1069,7 +1069,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m is MultiHeadAttention:
             print(f"Parse model debug: f={f}, args={args}")
             # Combine f and args into a single args list
-            args = [f] + list(args)
+            m_.f = f
             # m_ = torch.nn.Sequential(*(m(*args) for _ in range(n))) if n > 1 else m(*args)
 
         else:
