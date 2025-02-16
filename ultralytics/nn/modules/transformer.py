@@ -494,10 +494,10 @@ class Attention(nn.Module):
         self.f = f  # Store input indices for q, k, v
         self.embedding_dim = embedding_dim
         self.kv_in_dim = kv_in_dim if kv_in_dim is not None else embedding_dim
-        self.internal_dim = embedding_dim // downsample_rate
+        self.internal_dim = self.embedding_dim  # Use embedding_dim directly
         self.num_heads = num_heads
-        print(f"internal_dim={self.internal_dim}, num_heads={self.num_heads}")
-        assert self.internal_dim % num_heads == 0, "num_heads must divide embedding_dim."
+        print(f"Debug: f={f}, embedding_dim={embedding_dim}, internal_dim={self.internal_dim}, num_heads={num_heads}, kv_in_dim={kv_in_dim}")
+        assert self.internal_dim % num_heads == 0, f"num_heads ({num_heads}) must divide embedding_dim ({self.internal_dim})"
 
         # Define the projection layers
         self.q_proj = nn.Linear(embedding_dim, self.internal_dim)
