@@ -1099,10 +1099,12 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c2 = args[0]
             c1 = ch[f]
             args = [*args[1:]]
+ 
         elif m is Attention:  # Special case for Attention
             inputs = [layers[x] for x in f]  # Get the outputs of the layers specified in `f`
             args = [inputs, *args]  # Pass inputs as the first argument to Attention
-            c2 = args[0][0].shape[1]  # Adjust channel dimensions for Attention
+            c2 = args[1]  # Use `embedding_dim` (args[1]) as the output channel dimension
+
         elif m is torch.nn.Flatten:
             c2 = ch[f]  # Channel dimension remains the same
         else:
