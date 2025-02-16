@@ -1202,7 +1202,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                     args[j] = locals()[a] if a in locals() else ast.literal_eval(a)
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
 
-        elif m is MultiHeadAttention:
+        if m is MultiHeadAttention:
             print(f"Parse model debug: f={f}, args={args}")
             # Combine f and args into a single args list
             args = [f]+list(args)
