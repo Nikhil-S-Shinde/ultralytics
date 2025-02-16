@@ -1081,11 +1081,28 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         m_.i, m_.f, m_.type = i, f, t  # attach index, 'from' index, type
         if verbose:
             LOGGER.info(f"{i:>3}{str(f):>20}{n_:>3}{m_.np:10.0f}  {t:<45}{str(args):<30}")  # print
+
+        # Debug print 1: Show what's being added to save list
+        save_indices = [x % i for x in ([f] if isinstance(f, int) else f) if x != -1]
+        if save_indices:
+            print(f"Layer {i} ({t}): Saving outputs at indices {save_indices}")
+            
         save.extend(x % i for x in ([f] if isinstance(f, int) else f) if x != -1)  # append to savelist
         layers.append(m_)
         if i == 0:
             ch = []
         ch.append(c2)
+
+    # Debug print 2: Show final save list
+    print("\nFinal save list summary:")
+    print(f"Total saved outputs: {len(set(save))}")
+    print(f"Saved layer indices (sorted): {sorted(save)}")
+
+    # Optional: More detailed summary
+    print("\nDetailed save list analysis:")
+    for i, layer in enumerate(layers):
+        if i in set(save):
+            print(f"Layer {i}: {layer.type} (output will be saved)")
     return torch.nn.Sequential(*layers), sorted(save)
 
 
