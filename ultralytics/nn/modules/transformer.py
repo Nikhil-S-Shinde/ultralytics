@@ -558,11 +558,6 @@ class MultiHeadAttention(nn.Module):
         self.v_proj = nn.Linear(kv_in_dim, embedding_dim)
         self.out_proj = nn.Linear(embedding_dim, embedding_dim)
         
-        # Save for model summary
-        self.i = None  # Layer index
-        self.f = indices  # From layers
-        self.type = 'MultiHeadAttention'
-        
     @staticmethod
     def _separate_heads(x, num_heads):
         b, n, c = x.shape
@@ -574,33 +569,32 @@ class MultiHeadAttention(nn.Module):
         b, n_heads, n_tokens, c_per_head = x.shape
         x = x.transpose(1, 2)
         return x.reshape(b, n_tokens, n_heads * c_per_head)
-    
-    def forward(self, x, *args):
+        
+    def forward(self, x):
         """
-        Modified forward pass to work with YOLO architecture
-        Args:
-            x: Current input tensor
-            *args: List of all saved outputs
+            Modified to handle YOLO's output list structure
+            Args:
+            x: List containing [current_tensor, outputs_list]
         """
-        # Get saved outputs
-        outputs = args[0] if args else []
-        print(f"\nMultiHeadAttention layer {self.i} forward pass:")
-        print(f"Looking for indices: {self.f}")
+        if isinstance(x, (list, tuple)):
+            current, outputs = x[0], x[1]
+        else:
+            current, outputs = x, []
+            
+        # Debug print
+        print(f"\nMultiHeadAttention layer forward pass:")
+        print(f"Indices needed: {self.f}")
         print(f"Available outputs: {[i for i, out in enumerate(outputs) if out is not None]}")
         
-        # Get q, k, v from the stored indices
+        # Get q, k, v from outputs
         try:
             q = outputs[self.f[0]]
             k = outputs[self.f[1]]
             v = outputs[self.f[2]]
-            print(f"Successfully retrieved tensors:")
-            print(f"q shape: {q.shape}")
-            print(f"k shape: {k.shape}")
-            print(f"v shape: {v.shape}")
-        except IndexError:
-            print(f"Error accessing indices {self.f} from outputs list of length {len(outputs)}")
-            print(f"Available indices: {list(range(len(outputs)))}")
-            raise
+        except IndexError as e:
+            print(f"Error: Cannot access indices {self.f} in outputs list of length {len(outputs)}")
+            print(f"Available outputs: {[i for i, out in enumerate(outputs) if out is not None]}")
+            raise e
             
         # Project q, k, v
         q = self.q_proj(q)
