@@ -430,23 +430,36 @@ class DeformableTransformerDecoder(nn.Module):
 
 
 class EMA(nn.Module):
-    def __init__(self, channels, c2=None, factor=32):  # Keep as is - matches YOLOv8 pattern
+    def __init__(self, channels, c2=None, factor=32):
         super().__init__()
-        print(f"EMA initialized with channels={channels}, factor={factor}")
+        self.channels = channels
+        # Adjust factor to ensure channels is divisible
+        while channels % factor != 0 and factor > 1:
+            factor //= 2
         self.groups = factor
-        assert channels // self.groups > 0
+        print(f"EMA initialized with channels={channels}, factor={factor}")
+        
+        assert channels % self.groups == 0, f"channels({channels}) must be divisible by groups({self.groups})"
+        channels_per_group = channels // self.groups
+        
         self.softmax = nn.Softmax(-1)
         self.agp = nn.AdaptiveAvgPool2d((1, 1))
         self.pool_h = nn.AdaptiveAvgPool2d((None, 1))
         self.pool_w = nn.AdaptiveAvgPool2d((1, None))
-        self.gn = nn.GroupNorm(channels // self.groups, channels // self.groups)
-        self.conv1x1 = nn.Conv2d(channels // self.groups, channels // self.groups, kernel_size=1, stride=1, padding=0)
-        self.conv3x3 = nn.Conv2d(channels // self.groups, channels // self.groups, kernel_size=3, stride=1, padding=1)
+        self.gn = nn.GroupNorm(channels_per_group, channels_per_group)
+        self.conv1x1 = nn.Conv2d(channels_per_group, channels_per_group, kernel_size=1, stride=1, padding=0)
+        self.conv3x3 = nn.Conv2d(channels_per_group, channels_per_group, kernel_size=3, stride=1, padding=1)
 
-    def forward(self, x):  # Keep exactly as original
+    def forward(self, x):
         b, c, h, w = x.size()
         print(f"EMA input shape: batch={b}, channels={c}, height={h}, width={w}")
-        group_x = x.reshape(b * self.groups, -1, h, w)  # b*g,c//g,h,w
+        
+        # Ensure channels match initialization
+        assert c == self.channels, f"Input channels({c}) doesn't match initialized channels({self.channels})"
+        
+        channels_per_group = c // self.groups
+        group_x = x.view(b * self.groups, channels_per_group, h, w)  # b*g,c//g,h,w
+        
         x_h = self.pool_h(group_x)
         x_w = self.pool_w(group_x).permute(0, 1, 3, 2)
         hw = self.conv1x1(torch.cat([x_h, x_w], dim=2))
@@ -454,8 +467,8 @@ class EMA(nn.Module):
         x1 = self.gn(group_x * x_h.sigmoid() * x_w.permute(0, 1, 3, 2).sigmoid())
         x2 = self.conv3x3(group_x)
         x11 = self.softmax(self.agp(x1).reshape(b * self.groups, -1, 1).permute(0, 2, 1))
-        x12 = x2.reshape(b * self.groups, c // self.groups, -1)  # b*g, c//g, hw
+        x12 = x2.reshape(b * self.groups, channels_per_group, -1)  # b*g, c//g, hw
         x21 = self.softmax(self.agp(x2).reshape(b * self.groups, -1, 1).permute(0, 2, 1))
-        x22 = x1.reshape(b * self.groups, c // self.groups, -1)  # b*g, c//g, hw
+        x22 = x1.reshape(b * self.groups, channels_per_group, -1)  # b*g, c//g, hw
         weights = (torch.matmul(x11, x12) + torch.matmul(x21, x22)).reshape(b * self.groups, 1, h, w)
         return (group_x * weights.sigmoid()).reshape(b, c, h, w)
