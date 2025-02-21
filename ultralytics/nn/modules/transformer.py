@@ -432,6 +432,7 @@ class DeformableTransformerDecoder(nn.Module):
 class EMA(nn.Module):
     def __init__(self, channels, c2=None, factor=32):  # Keep as is - matches YOLOv8 pattern
         super().__init__()
+        print(f"EMA initialized with channels={channels}, factor={factor}")
         self.groups = factor
         assert channels // self.groups > 0
         self.softmax = nn.Softmax(-1)
@@ -444,6 +445,7 @@ class EMA(nn.Module):
 
     def forward(self, x):  # Keep exactly as original
         b, c, h, w = x.size()
+        print(f"EMA input shape: batch={b}, channels={c}, height={h}, width={w}")
         group_x = x.reshape(b * self.groups, -1, h, w)  # b*g,c//g,h,w
         x_h = self.pool_h(group_x)
         x_w = self.pool_w(group_x).permute(0, 1, 3, 2)
