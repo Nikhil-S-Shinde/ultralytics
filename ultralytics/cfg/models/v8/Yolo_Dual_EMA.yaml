@@ -1,6 +1,6 @@
 nc: 2 # number of classes
 scales:
-  s: [0.33, 0.50, 1024]
+  # s: [0.33, 0.50, 1024]
 
 backbone:
   # Input image placeholder
