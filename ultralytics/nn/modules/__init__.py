@@ -86,6 +86,7 @@ from .transformer import (
     TransformerBlock,
     TransformerEncoderLayer,
     TransformerLayer,
+    EMA.
 )
 
 __all__ = (
@@ -160,4 +161,5 @@ __all__ = (
     "PSA",
     "TorchVision",
     "Index",
+    "EMA",
 )
