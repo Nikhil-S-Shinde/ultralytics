@@ -437,7 +437,7 @@ class EMA(nn.Module):
         while channels % factor != 0 and factor > 1:
             factor //= 2
         self.groups = factor
-        print(f"EMA initialized with channels={channels}, factor={factor}")
+        # print(f"EMA initialized with channels={channels}, factor={factor}")
         
         assert channels % self.groups == 0, f"channels({channels}) must be divisible by groups({self.groups})"
         channels_per_group = channels // self.groups
@@ -452,7 +452,7 @@ class EMA(nn.Module):
 
     def forward(self, x):
         b, c, h, w = x.size()
-        print(f"EMA input shape: batch={b}, channels={c}, height={h}, width={w}")
+        # print(f"EMA input shape: batch={b}, channels={c}, height={h}, width={w}")
         
         # Ensure channels match initialization
         assert c == self.channels, f"Input channels({c}) doesn't match initialized channels({self.channels})"
