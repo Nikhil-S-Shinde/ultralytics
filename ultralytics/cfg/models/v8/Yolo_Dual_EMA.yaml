@@ -1,0 +1,54 @@
+nc: 2 # number of classes
+scales:
+  s: [0.33, 0.50, 1024]
+
+backbone:
+  # Input image placeholder
+  - [-1, 1, nn.Identity, []] #0
+  
+  # CNN track
+  - [0, 1, TorchVision, [960, mobilenet_v3_large, "DEFAULT", True, 2, True]]  # 1
+  - [-1, 1, Index, [40, 7]] #2 multiscale 1
+  - [1, 1, Index, [112, 13]] #3 multicale 2
+  - [1, 1, Index, [960, 17]] #4
+  - [-1, 1, SPPF, [960, 5]] #5 multiscale 3
+  
+  # Swin track
+  - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] #6
+  - [-1, 1, Index, [192 ,4]] #7
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #8 multiscale 1
+  - [6, 1, Index, [384, 6]] #9
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #10 multiscale 2
+  - [6, 1, Index, [768, 9]] #11
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #12
+  - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
+
+  # Concat features along channel dimension
+  - [[2, 8], 1, Concat, [1]] # 14 concat scale 1
+  - [-1, 1, EMA, [232]]      # 15 EMA for scale 1 (232 = 40 + 192 channels)
+  
+  - [[3, 10], 1, Concat, [1]] # 16 concat scale 2
+  - [-1, 1, EMA, [496]]       # 17 EMA for scale 2 (496 = 112 + 384 channels)
+  
+  - [[5, 13], 1, Concat, [1]] # 18 concat scale 3
+  - [-1, 1, EMA, [1728]]      # 19 EMA for scale 3 (1728 = 960 + 768 channels)
+
+head:
+  - [19, 1, nn.Upsample, [None, 2, "nearest"]] # 20 upsample EMA3 output to match H and W with EMA2
+  - [[-1, 17], 1, Concat, [1]] # 21 concat EMA3 + EMA2
+  - [-1, 1, C2f, [512]] # 22
+  
+  - [22, 1, nn.Upsample, [None, 2, "nearest"]] # 23 upsample to match H and W
+  - [[-1, 15], 1, Concat, [1]] # 24 concat with EMA1
+  - [-1, 1, C2f, [256]] # 25
+
+  # Bottom-Up Pathway
+  - [25, 1, Conv, [256, 3, 2]]    # 26: Downsample
+  - [[-1, 22], 1, Concat, [1]]    # 27: Concatenate
+  - [-1, 1, C2f, [512, True]]     # 28: C2f
+
+  - [28, 1, Conv, [512, 3, 2]]    # 29: Downsample
+  - [[-1, 19], 1, Concat, [1]]    # 30: Concatenate with EMA3
+  - [-1, 1, C2f, [1024, True]]    # 31: C2f
+
+  - [[25, 28, 31], 1, Detect, [nc]]  # 32: Detect(P3, P4, P5)
