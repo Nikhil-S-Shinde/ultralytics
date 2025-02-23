@@ -1,17 +1,18 @@
-nc: 2 # number of classes
+nc: 2  # number of classes
 scales:
-  # s: [0.33, 0.50, 1024]
+  # s: [0.33, 0.50, 1024]  # Uncommented since we'll use this scale
 
 backbone:
   # Input image placeholder
-  - [-1, 1, nn.Identity, []] #0
-  
+  - [-1, 1, nn.Identity, []]  # 0
+
   # CNN track (ConvNeXt Tiny)
-  - [0, 1, TorchVision, [768, convnext_tiny, "DEFAULT", True, 4, True]]  # 1 (outputs 768 channels at final stage)
-  - [-1, 1, Index, [192, 4]]  # 2 multiscale 1 
-  - [1, 1, Index, [384, 6]]  # 3 multiscale 2 
-  - [1, 1, Index, [768, 8]]  # 4 
-  - [-1, 1, SPPF, [768, 8]]  # 5 multiscale 3 (SPPF on 768 channels)
-  
+  - [-1, 1, TorchVision, [768, convnext_tiny, "DEFAULT", True, 4, True]]  # 1
+  - [-1, 1, Index, [192, 4]]  # 2 multiscale 1
+  - [1, 1, Index, [384, 6]]   # 3 multiscale 2
+  - [1, 1, Index, [768, 8]]   # 4
+  - [-1, 1, SPPF, [768, 8]]   # 5 multiscale 3
+
 head:
-  -[[2, 3, 5], 1, Detect, [nc]]
+  # The error occurs because head needs to be a list of lists, not a single list
+  - [[2, 3, 5], 1, Detect, [nc]]  # Detect(P3, P4, P5)
