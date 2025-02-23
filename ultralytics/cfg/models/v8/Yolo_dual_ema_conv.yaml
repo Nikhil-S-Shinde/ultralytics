@@ -7,7 +7,7 @@ backbone:
   - [-1, 1, nn.Identity, []]  # 0
 
   # CNN track (ConvNeXt Tiny)
-  - [-1, 1, TorchVision, [768, convnext_tiny, "DEFAULT", True, 4, True]]  # 1
+  - [-1, 1, TorchVision, [768, convnext_tiny, "DEFAULT", True, 2, True]]  # 1
   - [-1, 1, Index, [192, 4]]  # 2 multiscale 1
   - [1, 1, Index, [384, 6]]   # 3 multiscale 2
   - [1, 1, Index, [768, 8]]   # 4
