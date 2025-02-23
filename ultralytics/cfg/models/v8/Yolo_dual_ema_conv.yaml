@@ -49,5 +49,5 @@ head:
   - [-1, 1, C2f, [1536]] # 31 P5
 
   # Detection head
-  - [[25, 28, 31], 1, Detect, [nc, [384, 768, 1536]]]  # 32 Detect(P3, P4, P5)
-  - [[14, 15, 16], 1, Detect, [nc]]  # passes all three feature maps to detection head
+  # - [[25, 28, 31], 1, Detect, [nc, [384, 768, 1536]]]  # 32 Detect(P3, P4, P5)
+  - [[25, 28, 31], 1, Detect, [nc]]  # passes all three feature maps to detection head
