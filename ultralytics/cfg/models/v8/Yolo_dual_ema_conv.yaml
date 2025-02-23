@@ -1,5 +1,7 @@
-nc: 1
 backbone:
-  - [-1, 1, TorchVision, [768, "convnext_tiny", "DEFAULT", True, 2, True]]
+  # [from, repeats, module, args]
+  - [-1, 1, TorchVision, [768, "convnext_large", "DEFAULT", True, 2]]  # truncate two layers from the end
+
+# YOLO11n head
 head:
-  - [-1, 1, nn.Identity, []]
+  - [-1, 1, Classify, [nc]] # Classify
