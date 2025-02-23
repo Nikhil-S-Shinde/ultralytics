@@ -30,4 +30,24 @@ backbone:
   - [-1, 1, EMA, [1536]] # 19 ((768 + 768 = 1536}
 
 head:
+     # Top-down path (Upsampling)
+  - [19, 1, nn.Upsample, [None, 2, "nearest"]] # 20
+  - [[-1, 17], 1, Concat, [1]] # 21 (1536 + 768 = 2304)
+  - [-1, 1, C2f, [768]] # 22
+
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]] # 23
+  - [[-1, 15], 1, Concat, [1]] # 24 (768 + 384 = 1152)
+  - [-1, 1, C2f, [384]] # 25 P3
+
+  # Bottom-up path (PAN)
+  - [-1, 1, Conv, [384, 3, 2]] # 26
+  - [[-1, 22], 1, Concat, [1]] # 27 (384 + 768 = 1152)
+  - [-1, 1, C2f, [768]] # 28 P4
+
+  - [-1, 1, Conv, [768, 3, 2]] # 29
+  - [[-1, 19], 1, Concat, [1]] # 30 (768 + 1536 = 2304)
+  - [-1, 1, C2f, [1536]] # 31 P5
+
+  # Detection head
+  - [[25, 28, 31], 1, Detect, [nc, [384, 768, 1536]]]  # 32 Detect(P3, P4, P5)
   - [[14, 15, 16], 1, Detect, [nc]]  # passes all three feature maps to detection head
