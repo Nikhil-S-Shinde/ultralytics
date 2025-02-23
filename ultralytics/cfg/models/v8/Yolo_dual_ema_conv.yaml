@@ -22,10 +22,10 @@ backbone:
   # - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
 
   #concat
-  - [[2, 8], 1, Concat, [1]] # 14 concat scale 1 12
+  - [[2, 7], 1, Concat, [1]] # 14 concat scale 1 12
   - [-1, 1, EMA, [384]] # 15 ((192 + 192 = 384} 13
   
-  - [[3, 10], 1, Concat, [1]] # 16 concat scale 1 14
+  - [[3, 9], 1, Concat, [1]] # 16 concat scale 1 14
   - [-1, 1, EMA, [768]] # 17 ((384 + 384 = 768} 15
   
   - [[4, 11], 1, Concat, [1]] # 18 concat scale 1 16
@@ -51,5 +51,6 @@ head:
   - [-1, 1, C3k2, [1024, False]]  # Apply C3k2 (index 31) 29
 
   # Detection
-  - [[23, 26, 29], 1, Detect, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
+  # - [[23, 26, 29], 1, Detect, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
+  - [[23, 26, 29], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
 
