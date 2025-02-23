@@ -15,9 +15,9 @@ backbone:
   - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] #6 5
   - [-1, 1, Index, [192 ,4]] #7 6
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #8 multiscale 1 7
-  - [6, 1, Index, [384, 6]] #9 8
+  - [5, 1, Index, [384, 6]] #9 8
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #10 multiscale 2 9
-  - [6, 1, Index, [768, 9]] #11 10
+  - [5, 1, Index, [768, 9]] #11 10
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #12 11
   # - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
 
@@ -51,6 +51,6 @@ head:
   - [-1, 1, C3k2, [1024, False]]  # Apply C3k2 (index 31) 29
 
   # Detection
-  # - [[23, 26, 29], 1, Detect, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
+  - [[23, 26, 29], 1, Detect, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
   - [[23, 26, 29], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
 
