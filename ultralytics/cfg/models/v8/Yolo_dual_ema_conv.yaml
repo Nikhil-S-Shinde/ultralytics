@@ -6,6 +6,6 @@ backbone:
   - [1, 1, Index, [192, 4]]  # extracts 4th output (1, 192, 80, 80) - 2
   - [1, 1, Index, [384, 6]]  # extracts 6th output (1, 384, 40, 40) - 3
   - [1, 1, Index, [768, 8]]  # extracts 8th output (1, 768, 20, 20) - 4
-  - [-1, 1, SPPF, [768, 8]] # -5
+  - [-1, 1, SPPF, [768, 5]] # -5
 head:
   - [[2, 3, 4], 1, Detect, [nc]]  # passes all three feature maps to detection head
