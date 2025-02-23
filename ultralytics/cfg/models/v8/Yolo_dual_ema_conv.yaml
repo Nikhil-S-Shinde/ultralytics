@@ -64,11 +64,11 @@ head:
   - [-1, 1, C3k2, [256, False]]                # Apply C3k2 on concatenated features (index 25)
 
   # Bottom-Up Pathway
-  - [25, 1, Conv, [256, 256, 3, 2]]    # Downsample Scale 1 (index 26)
+  - [25, 1, DWConv, [256, 256, 3, 2]]    # Downsample Scale 1 (index 26)
   - [[-1, 22], 1, Concat, [1]]    # Concatenate (Scale 1 -> Scale 2) (index 27)
   - [-1, 1, C3k2, [512, False]]   # Apply C3k2 (index 28)
 
-  - [28, 1, Conv, [512, 512, 3, 2]]    # Downsample Scale 2 (index 29)
+  - [28, 1, DWConv, [512, 512, 3, 2]]    # Downsample Scale 2 (index 29)
   - [[-1, 19], 1, Concat, [1]]    # Concatenate with EMA3 (Scale 3) (index 30)
   - [-1, 1, C3k2, [1024, False]]  # Apply C3k2 (index 31)
 
