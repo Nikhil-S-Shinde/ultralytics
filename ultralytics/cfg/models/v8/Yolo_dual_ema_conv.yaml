@@ -1,8 +1,9 @@
-nc: 1
+nc: 2
 backbone:
   - [-1, 1, TorchVision, [768, "convnext_tiny", "DEFAULT", True, 2, True]]  # - 0
   - [0, 1, Index, [192, 4]]  # extracts 4th output (1, 192, 80, 80) - 1
   - [0, 1, Index, [384, 6]]  # extracts 6th output (1, 384, 40, 40) - 2
   - [0, 1, Index, [768, 8]]  # extracts 8th output (1, 768, 20, 20) - 3
+  - [-1, 1, SPPF, [768, 8]
 head:
   - [[1, 2, 3], 1, Detect, [nc]]  # passes all three feature maps to detection head
