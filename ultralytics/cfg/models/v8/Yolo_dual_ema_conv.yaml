@@ -1,5 +1,5 @@
 nc: 2
-# scales:
+scales:
   s: [1.0, 1.0, 1536]
 backbone:
   - [-1, 1, nn.Identity, []] #0
