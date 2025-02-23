@@ -500,7 +500,7 @@ class EMA(nn.Module):
     def forward(self, x):
         b, c, h, w = x.size()
         x = x.contiguous()  # Ensure tensor is contiguous
-        print(f"Is tensor contiguous? {x.is_contiguous()}")
+        # print(f"Is tensor contiguous? {x.is_contiguous()}")
         # print(f"EMA input shape: batch={b}, channels={c}, height={h}, width={w}")
         
         # Ensure channels match initialization
