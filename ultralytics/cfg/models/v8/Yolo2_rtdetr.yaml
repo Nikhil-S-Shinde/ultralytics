@@ -1,6 +1,6 @@
 nc: 2 # number of classes
 scales:
-  # s: [0.33, 0.50, 1024]
+  s: [1.0, 1.0, 1728]
 
 backbone:
   # Input image placeholder
@@ -36,20 +36,20 @@ backbone:
 head:
   - [19, 1, nn.Upsample, [None, 2, "nearest"]] # 20 upsample EMA3 output to match H and W with EMA2
   - [[-1, 17], 1, Concat, [1]] # 21 concat EMA3 + EMA2
-  - [-1, 1, C2f, [512]] # 22
+  - [-1, 1, C3k2, [512, False]] # 22
   
   - [22, 1, nn.Upsample, [None, 2, "nearest"]] # 23 upsample to match H and W
   - [[-1, 15], 1, Concat, [1]] # 24 concat with EMA1
-  - [-1, 1, C2f, [256]] # 25
+  - [-1, 1, C3k2, [256, False]] # 25
 
   # Bottom-Up Pathway
-  - [25, 1, Conv, [256, 3, 2]]    # 26: Downsample
+  - [25, 1, DWConv, [256, 3, 2]]    # 26: Downsample
   - [[-1, 22], 1, Concat, [1]]    # 27: Concatenate
-  - [-1, 1, C2f, [512, True]]     # 28: C2f
+  - [-1, 1, C3k2, [512, True]]     # 28: C2f
 
-  - [28, 1, Conv, [512, 3, 2]]    # 29: Downsample
+  - [28, 1, DWConv, [512, 3, 2]]    # 29: Downsample
   - [[-1, 19], 1, Concat, [1]]    # 30: Concatenate with EMA3
-  - [-1, 1, C2f, [1024, True]]    # 31: C2f
+  - [-1, 1, C3k2, [1024, True]]    # 31: C2f
 
   # - [[25, 28, 31], 1, Detect, [nc]]  # 32: Detect(P3, P4, P5)
   - [[25, 28, 31], 1, RTDETRDecoder, [nc]]  # 32: Detect(P3, P4, P5)
