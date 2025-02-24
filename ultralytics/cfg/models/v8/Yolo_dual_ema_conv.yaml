@@ -1,0 +1,55 @@
+nc: 2
+scales:
+  s: [1.0, 1.0, 1536]
+backbone:
+  - [-1, 1, nn.Identity, []] #0
+
+  #CNN
+  - [0, 1, TorchVision, [768, "convnext_tiny", "DEFAULT", True, 2, True]]  # - 1
+  - [-1, 1, Index, [192, 4]]  # extracts 4th output (1, 192, 80, 80) - 2
+  - [1, 1, Index, [384, 6]]  # extracts 6th output (1, 384, 40, 40) - 3
+  - [1, 1, Index, [768, 8]]  # extracts 8th output (1, 768, 20, 20) - 4
+  # - [-1, 1, SPPF, [768, 5]] # -5
+  
+  # Swin track
+  - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] #6 5
+  - [-1, 1, Index, [192 ,4]] #7 6
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #8 multiscale 1 7
+  - [5, 1, Index, [384, 6]] #9 8
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #10 multiscale 2 9
+  - [5, 1, Index, [768, 9]] #11 10
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #12 11
+  # - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
+
+  #concat
+  - [[2, 7], 1, Concat, [1]] # 14 concat scale 1 12
+  - [-1, 1, EMA, [384]] # 15 ((192 + 192 = 384} 13
+  
+  - [[3, 9], 1, Concat, [1]] # 16 concat scale 1 14
+  - [-1, 1, EMA, [768]] # 17 ((384 + 384 = 768} 15
+  
+  - [[4, 11], 1, Concat, [1]] # 18 concat scale 1 16
+  - [-1, 1, EMA, [1536]] # 19 ((768 + 768 = 1536} 17
+
+head:
+# Top-Down Pathway
+  - [17, 1, nn.Upsample, [None, 2, "nearest"]]  # Upsample EMA3 to match Scale 2 (index 20) 18
+  - [[-1, 15], 1, Concat, [1]]                 # Concatenate EMA3 (upsampled) + EMA2 (index 21) 19
+  - [-1, 1, C3k2, [512, False]]                # Apply C3k2 on concatenated features (index 22) 20
+
+  - [20, 1, nn.Upsample, [None, 2, "nearest"]]  # Upsample to match Scale 1 (index 23) 21
+  - [[-1, 13], 1, Concat, [1]]                 # Concatenate with EMA1 (index 24) 22
+  - [-1, 1, C3k2, [256, False]]                # Apply C3k2 on concatenated features (index 25) 23
+
+  # Bottom-Up Pathway
+  - [23, 1, DWConv, [256, 3, 2]]    # Downsample Scale 1 (index 26) 24
+  - [[-1, 20], 1, Concat, [1]]    # Concatenate (Scale 1 -> Scale 2) (index 27) 25
+  - [-1, 1, C3k2, [512, False]]   # Apply C3k2 (index 28) 26
+
+  - [26, 1, DWConv, [512, 3, 2]]    # Downsample Scale 2 (index 29) 27
+  - [[-1, 17], 1, Concat, [1]]    # Concatenate with EMA3 (Scale 3) (index 30) 28
+  - [-1, 1, C3k2, [1024, False]]  # Apply C3k2 (index 31) 29
+
+  # Detection
+  - [[23, 26, 29], 1, Detect, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
+  # - [[23, 26, 29], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
