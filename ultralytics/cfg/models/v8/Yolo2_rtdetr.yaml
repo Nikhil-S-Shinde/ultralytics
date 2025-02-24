@@ -51,4 +51,6 @@ head:
   - [[-1, 19], 1, Concat, [1]]    # 30: Concatenate with EMA3
   - [-1, 1, C2f, [1024, True]]    # 31: C2f
 
-  - [[25, 28, 31], 1, Detect, [nc]]  # 32: Detect(P3, P4, P5)
+  # - [[25, 28, 31], 1, Detect, [nc]]  # 32: Detect(P3, P4, P5)
+  - [[25, 28, 31], 1, RTDETRDecoder, [nc]]  # 32: Detect(P3, P4, P5)
+  
