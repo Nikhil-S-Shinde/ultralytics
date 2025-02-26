@@ -22,8 +22,44 @@ __all__ = (
     "Concat",
     "RepConv",
     "Index",
+    "BiFPN_Concat2",
+    "BiFPN_Concat3",
 )
 
+# Combine with BiFPN to set learnable parameters and learn the weights of different branches
+# Two branches concat operation
+class BiFPN_Concat2(nn.Module):
+    def __init__(self, dimension=1):
+        super(BiFPN_Concat2, self).__init__()
+        self.d = dimension
+        self.w = nn.Parameter(torch.ones(2, dtype=torch.float32), requires_grad=True)
+        self.epsilon = 0.0001
+
+    def forward(self, x):
+        w = self.w
+        weight = w / (torch.sum(w, dim=0) + self.epsilon)  # 将权重进行归一化
+        # Fast normalized fusion
+        x = [weight[0] * x[0], weight[1] * x[1]]
+        return torch.cat(x, self.d)
+
+
+# Three branches concat operation
+class BiFPN_Concat3(nn.Module):
+    def __init__(self, dimension=1):
+        super(BiFPN_Concat3, self).__init__()
+        self.d = dimension
+       # Set the learnable parameters. The function of nn.Parameter is to convert a non-trainable type Tensor into a trainable type parameter.
+        # And the parameter will be registered with the host model and become part of it, that is, model.parameters() will include this parameter
+        # So that when parameters are optimized, they can be automatically optimized together.
+        self.w = nn.Parameter(torch.ones(3, dtype=torch.float32), requires_grad=True)
+        self.epsilon = 0.0001
+
+    def forward(self, x):
+        w = self.w
+        weight = w / (torch.sum(w, dim=0) + self.epsilon)  # 将权重进行归一化
+        # Fast normalized fusion
+        x = [weight[0] * x[0], weight[1] * x[1], weight[2] * x[2]]
+        return torch.cat(x, self.d)
 
 def autopad(k, p=None, d=1):  # kernel, padding, dilation
     """Pad to 'same' shape outputs."""
