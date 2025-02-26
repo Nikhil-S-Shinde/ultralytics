@@ -88,7 +88,7 @@ backbone:
 
   - [[5, 13], 1, Concat, [1]] # 18 concat scale 3 (768 + 768 = 1536 channels)
   - [-1, 1, EMA, [1536]]      # 19 EMA for scale 3
-  - [-1, 1, Conv, [1152, 1, 1]] # 20[output channel, kernel size, strize]
+  - [-1, 1, DWConv, [1152, 1, 1]] # 20[output channel, kernel size, strize]
 
 head:
   # Top-Down Pathway
