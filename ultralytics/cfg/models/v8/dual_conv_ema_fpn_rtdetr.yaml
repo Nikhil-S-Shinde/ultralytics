@@ -106,4 +106,4 @@ head:
   - [-1, 1, C3k2, [1664, 768, 1, True]]  # 31: Reduced output channels from 1024 to 768
 
   # Detection
-  - [[25, 28, 31], 1, RTDETRDecoder, [nc, [192,
+  - [[25, 28, 31], 1, RTDETRDecoder, [nc]]
