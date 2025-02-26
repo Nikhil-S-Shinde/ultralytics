@@ -999,6 +999,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             C2fPSA,
             C2fCIB,
             C2PSA,
+            BiFPN_Concat2,
+            BiFPN_Concat3,
         }
     )
     for i, (f, n, m, args) in enumerate(d["backbone"] + d["head"]):  # from, number, module, args
@@ -1044,7 +1046,10 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m is torch.nn.BatchNorm2d:
             args = [ch[f]]
         elif m is Concat:
-            c2 = sum(ch[x] for x in f)           
+            c2 = sum(ch[x] for x in f)
+        #Add bifpn_concat structure
+        elif m in [Concat, BiFPN_Concat2, BiFPN_Concat3]:
+            c2 = sum(ch[x] for x in f)
         elif m in frozenset({Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}):
             args.append([ch[x] for x in f])
             if m is Segment:
