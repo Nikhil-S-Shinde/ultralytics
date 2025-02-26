@@ -1194,9 +1194,15 @@ class TorchVision(nn.Module):
                 layers = [*list(layers[0].children()), *layers[1:]]
             self.m = nn.Sequential(*(layers[:-truncate] if truncate else layers))
             self.split = split
+            # Reapply freeze settings after unwrapping and truncating
+            for param in self.m.parameters():
+                param.requires_grad = not freeze
         else:
             self.split = False
             self.m.head = self.m.heads = nn.Identity()
+            # Reapply freeze settings for non-unwrapped model
+            for param in self.m.parameters():
+                param.requires_grad = not freeze
 
     def forward(self, x):
         """Forward pass through the model."""
