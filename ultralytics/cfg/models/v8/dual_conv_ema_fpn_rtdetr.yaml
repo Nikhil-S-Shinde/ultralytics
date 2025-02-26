@@ -1,36 +1,38 @@
 
-nc: 2
+nc: 2 # number of classes
 scales:
-  s: [1.0, 1.0, 1536]
-backbone:
-  - [-1, 1, nn.Identity, []] #0
+  s: [1.0, 1.0, 1728]
 
-  #CNN
-  - [0, 1, TorchVision, [768, "convnext_tiny", "DEFAULT", True, 2, True]]  # - 1
-  - [-1, 1, Index, [192, 4]]  # extracts 4th output (1, 192, 80, 80) - 2
-  - [1, 1, Index, [384, 6]]  # extracts 6th output (1, 384, 40, 40) - 3
-  - [1, 1, Index, [768, 8]]  # extracts 8th output (1, 768, 20, 20) - 4
-  # - [-1, 1, SPPF, [768, 5]] # -5
+backbone:
+  # Input image placeholder
+  - [-1, 1, nn.Identity, []] #0
+  
+  # CNN track
+  - [0, 1, TorchVision, [960, mobilenet_v3_large, "DEFAULT", True, 2, True]]  # 1
+  - [-1, 1, Index, [40, 7]] #2 multiscale 1
+  - [1, 1, Index, [112, 13]] #3 multicale 2
+  - [1, 1, Index, [960, 17]] #4
+  - [-1, 1, SPPF, [960, 5]] #5 multiscale 3
   
   # Swin track
-  - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] #6 5
-  - [-1, 1, Index, [192 ,4]] #7 6
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #8 multiscale 1 7
-  - [5, 1, Index, [384, 6]] #9 8
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #10 multiscale 2 9
-  - [5, 1, Index, [768, 9]] #11 10
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #12 11
-  # - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
+  - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] #6
+  - [-1, 1, Index, [192 ,4]] #7
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #8 multiscale 1
+  - [6, 1, Index, [384, 6]] #9
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #10 multiscale 2
+  - [6, 1, Index, [768, 9]] #11
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #12
+  - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
 
-  #concat
-  - [[2, 7], 1, Concat, [1]] # 14 concat scale 1 12
-  - [-1, 1, EMA, [384]] # 15 ((192 + 192 = 384} 13
+  # Concat features along channel dimension
+  - [[2, 8], 1, Concat, [1]] # 14 concat scale 1
+  - [-1, 1, EMA, [232]]      # 15 EMA for scale 1 (232 = 40 + 192 channels)
   
-  - [[3, 9], 1, Concat, [1]] # 16 concat scale 1 14
-  - [-1, 1, EMA, [768]] # 17 ((384 + 384 = 768} 15
+  - [[3, 10], 1, Concat, [1]] # 16 concat scale 2
+  - [-1, 1, EMA, [496]]       # 17 EMA for scale 2 (496 = 112 + 384 channels)
   
-  - [[4, 11], 1, Concat, [1]] # 18 concat scale 1 16
-  - [-1, 1, EMA, [1536]] # 19 ((768 + 768 = 1536} 17
+  - [[5, 13], 1, Concat, [1]] # 18 concat scale 3
+  - [-1, 1, EMA, [1728]]      # 19 EMA for scale 3 (1728 = 960 + 768 channels)
 
 head:
   - [19, 1, nn.Upsample, [None, 2, "nearest"]] # 20 upsample EMA3 output to match H and W with EMA2
