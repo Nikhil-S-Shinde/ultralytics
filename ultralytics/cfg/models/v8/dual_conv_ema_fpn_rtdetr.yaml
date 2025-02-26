@@ -1,6 +1,6 @@
 nc: 2 # number of classes
 scales:
-  s: [1.0, 1.0, 1728]
+  s: [1.0, 1.0, 1536]
 
 backbone:
   - [-1, 1, nn.Identity, []] # 0
@@ -10,7 +10,7 @@ backbone:
   - [-1, 1, Index, [192, 4]]  # extracts 4th output (1, 192, 80, 80) - 2
   - [1, 1, Index, [384, 6]]  # extracts 6th output (1, 384, 40, 40) - 3
   - [1, 1, Index, [768, 8]]  # extracts 8th output (1, 768, 20, 20) - 4
-  - [-1, 1, SPPF, [768, 5]]  # 5: Add SPPF for ConvNeXt (768 channels, kernel size 5)
+  - [-1, 1, SPPF, [768, 3]]  # 5: Add SPPF for ConvNeXt (768 channels, kernel size 5)
 
   # Swin Transformer
   - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] # 6
@@ -20,7 +20,7 @@ backbone:
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] # 10 (multiscale 2)
   - [6, 1, Index, [768, 9]] # 11
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] # 12 (multiscale 3)
-  - [-1, 1, SPPF, [768, 5]]  # 13: Add SPPF for Swin Transformer (768 channels, kernel size 5)
+  - [-1, 1, SPPF, [768, 3]]  # 13: Add SPPF for Swin Transformer (768 channels, kernel size 5)
 
   # Concat features along channel dimension
   - [[2, 8], 1, Concat, [1]] # 14 concat scale 1 (192 + 192 = 384 channels)
