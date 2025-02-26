@@ -1072,7 +1072,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             # For TorchVision, we need to pass all arguments including the new freeze parameter
             if m is TorchVision:
                 # args = [output_channels, model_name, weights, unwrap, truncate, split, freeze]
-                args = [c1, *args]  # Include input channels and all other arguments
+                args = [c1, *args[1:]]  # Include input channels and all other arguments
             else:  # For Index
                 args = [*args[1:]]
         else:
