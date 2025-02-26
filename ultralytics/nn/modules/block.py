@@ -1110,11 +1110,57 @@ class SCDown(nn.Module):
         return self.cv2(self.cv1(x))
 
 
+# class TorchVision(nn.Module):
+#     """
+#     TorchVision module to allow loading any torchvision model.
+
+#     This class provides a way to load a model from the torchvision library, optionally load pre-trained weights, and customize the model by truncating or unwrapping layers.
+
+#     Attributes:
+#         m (nn.Module): The loaded torchvision model, possibly truncated and unwrapped.
+
+#     Args:
+#         model (str): Name of the torchvision model to load.
+#         weights (str, optional): Pre-trained weights to load. Default is "DEFAULT".
+#         unwrap (bool, optional): If True, unwraps the model to a sequential containing all but the last `truncate` layers. Default is True.
+#         truncate (int, optional): Number of layers to truncate from the end if `unwrap` is True. Default is 2.
+#         split (bool, optional): Returns output from intermediate child modules as list. Default is False.
+#     """
+
+#     def __init__(self, model, weights="DEFAULT", unwrap=True, truncate=2, split=False):
+#         """Load the model and weights from torchvision."""
+#         import torchvision  # scope for faster 'import ultralytics'
+
+#         super().__init__()
+#         if hasattr(torchvision.models, "get_model"):
+#             self.m = torchvision.models.get_model(model, weights=weights)
+#         else:
+#             self.m = torchvision.models.__dict__[model](pretrained=bool(weights))
+#         if unwrap:
+#             layers = list(self.m.children())
+#             if isinstance(layers[0], nn.Sequential):  # Second-level for some models like EfficientNet, Swin
+#                 layers = [*list(layers[0].children()), *layers[1:]]
+#             self.m = nn.Sequential(*(layers[:-truncate] if truncate else layers))
+#             self.split = split
+#         else:
+#             self.split = False
+#             self.m.head = self.m.heads = nn.Identity()
+
+#     def forward(self, x):
+#         """Forward pass through the model."""
+#         if self.split:
+#             y = [x]
+#             y.extend(m(y[-1]) for m in self.m)
+#         else:
+#             y = self.m(x)
+#         return y
+
 class TorchVision(nn.Module):
     """
-    TorchVision module to allow loading any torchvision model.
+    TorchVision module to allow loading any torchvision model for pre-training or fine-tuning.
 
-    This class provides a way to load a model from the torchvision library, optionally load pre-trained weights, and customize the model by truncating or unwrapping layers.
+    This class provides a way to load a pre-trained model from torchvision and set it up for either
+    pre-training (frozen) or fine-tuning (trainable).
 
     Attributes:
         m (nn.Module): The loaded torchvision model, possibly truncated and unwrapped.
@@ -1125,20 +1171,26 @@ class TorchVision(nn.Module):
         unwrap (bool, optional): If True, unwraps the model to a sequential containing all but the last `truncate` layers. Default is True.
         truncate (int, optional): Number of layers to truncate from the end if `unwrap` is True. Default is 2.
         split (bool, optional): Returns output from intermediate child modules as list. Default is False.
+        freeze (bool, optional): If True, freezes all parameters (for pre-training). If False, allows fine-tuning. Default is False.
     """
 
-    def __init__(self, model, weights="DEFAULT", unwrap=True, truncate=2, split=False):
-        """Load the model and weights from torchvision."""
-        import torchvision  # scope for faster 'import ultralytics'
+    def __init__(self, model, weights="DEFAULT", unwrap=True, truncate=2, split=False, freeze=False):
+        """Load the pre-trained model and set up for pre-training or fine-tuning."""
+        import torchvision
 
         super().__init__()
         if hasattr(torchvision.models, "get_model"):
             self.m = torchvision.models.get_model(model, weights=weights)
         else:
             self.m = torchvision.models.__dict__[model](pretrained=bool(weights))
+
+        # Set parameter trainability based on freeze flag
+        for param in self.m.parameters():
+            param.requires_grad = not freeze
+
         if unwrap:
             layers = list(self.m.children())
-            if isinstance(layers[0], nn.Sequential):  # Second-level for some models like EfficientNet, Swin
+            if isinstance(layers[0], nn.Sequential):
                 layers = [*list(layers[0].children()), *layers[1:]]
             self.m = nn.Sequential(*(layers[:-truncate] if truncate else layers))
             self.split = split
