@@ -100,7 +100,7 @@ head:
   - [[-1, 19], 1, BiFPN_Concat2, [1]]    # 24: BiFPN Concatenate (256 + 512 = 768 channels)
   - [-1, 1, C3k2, [512, True]]     # 25: C2f (reduce to 512 channels)
 
-  - [28, 1, DWConv, [512, 3, 2]]    # 26: Downsample
+  - [25, 1, DWConv, [512, 3, 2]]    # 26: Downsample
   - [[-1, 16], 1, BiFPN_Concat2, [1]]    # 27: Concatenate with EMA3 (512 + 1536 = 2048 channels)
   - [-1, 1, C3k2, [1024, True]]    # 28: C2f (reduce to 1024 channels)
 
