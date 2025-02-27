@@ -85,25 +85,42 @@ backbone:
   - [[6, 15], 1, Concat, [1]] # 16 concat scale 3 (768 + 768 = 1536 channels)
 
 
+# head:
+#   # Top-Down Pathway
+#   - [16, 1, nn.Upsample, [None, 2, "nearest"]] # 17 upsample EMA3 output to match H and W with EMA2
+#   - [[-1, 3, 11], 1, BiFPN_Concat3, [1]] # 18 concat EMA3 + EMA2 (1536 + 384 + 384)
+#   - [-1, 1, C2f, [512]] # 19 reduce channels to 512
+
+#   - [19, 1, nn.Upsample, [None, 2, "nearest"]] # 20 upsample to match H and W with EMA1
+#   - [[-1, 2, 9], 1, BiFPN_Concat3, [1]] # 21 concat with EMA1 (512 + 192 + 192 = 896 channels)
+#   - [-1, 1, C2f, [256]] # 22 reduce channels to 256
+
+#   # Bottom-Up Pathway
+#   - [22, 1, DWConv, [256, 3, 2]]    # 23: Downsample
+#   - [[-1, 19], 1, BiFPN_Concat2, [1]]    # 24: BiFPN Concatenate (256 + 512 = 768 channels)
+#   - [-1, 1, C2f, [512]]     # 25: C2f (reduce to 512 channels)
+
+#   - [25, 1, DWConv, [512, 3, 2]]    # 26: Downsample
+#   - [[-1, 16], 1, BiFPN_Concat2, [1]]    # 27: Concatenate with EMA3 (512 + 1536 = 2048 channels)
+#   - [-1, 1, C2f, [1024]]    # 28: C2f (reduce to 1024 channels)
+
+#   # Detection
+#   - [[22, 25, 28], 1, RTDETRDecoder, [nc]]  # 29: Detect(P3, P4, P5)
+
 head:
   # Top-Down Pathway
   - [16, 1, nn.Upsample, [None, 2, "nearest"]] # 17 upsample EMA3 output to match H and W with EMA2
-  - [[-1, 3, 11], 1, BiFPN_Concat3, [1]] # 18 concat EMA3 + EMA2 (1536 + 768 = 2304 channels)
-  - [-1, 1, C2f, [512]] # 19 reduce channels to 512
-
+  - [[-1, 3, 11], 1, BiFPN_Concat2, [1]] # 18 concat EMA3 + EMA2 (1536 + 384 = 1920 channels)
+  - [-1, 1, GhostBottleneck, [1920, 384]] # 19 reduce channels to 384 (critical layer, lightweight)
   - [19, 1, nn.Upsample, [None, 2, "nearest"]] # 20 upsample to match H and W with EMA1
-  - [[-1, 2, 9], 1, BiFPN_Concat3, [1]] # 21 concat with EMA1 (512 + 384 = 896 channels)
-  - [-1, 1, C2f, [256]] # 22 reduce channels to 256
-
+  - [[-1, 2, 9], 1, BiFPN_Concat2, [1]] # 21 concat with EMA1 (384 + 192 = 576 channels)
+  - [-1, 1, LightConv, [576, 192]] # 22 reduce channels to 192 (less critical, lightweight)
   # Bottom-Up Pathway
-  - [22, 1, DWConv, [256, 3, 2]]    # 23: Downsample
-  - [[-1, 19], 1, BiFPN_Concat2, [1]]    # 24: BiFPN Concatenate (256 + 512 = 768 channels)
-  - [-1, 1, C2f, [512]]     # 25: C2f (reduce to 512 channels)
-
-  - [25, 1, DWConv, [512, 3, 2]]    # 26: Downsample
-  - [[-1, 16], 1, BiFPN_Concat2, [1]]    # 27: Concatenate with EMA3 (512 + 1536 = 2048 channels)
-  - [-1, 1, C2f, [1024]]    # 28: C2f (reduce to 1024 channels)
-
+  - [22, 1, AConv, [192, 192]] # 23: Downsample (lightweight)
+  - [[-1, 19], 1, BiFPN_Concat2, [1]] # 24: BiFPN Concatenate (192 + 384 = 576 channels)
+  - [-1, 1, LightConv, [576, 384]] # 25: Reduce channels to 384 (less critical, lightweight)
+  - [25, 1, AConv, [384, 384]] # 26: Downsample (lightweight)
+  - [[-1, 16], 1, BiFPN_Concat2, [1]] # 27: Concatenate with EMA3 (384 + 1536 = 1920 channels)
+  - [-1, 1, GhostBottleneck, [1920, 768]] # 28: Reduce channels to 768 (critical layer, lightweight)
   # Detection
-  - [[22, 25, 28], 1, RTDETRDecoder, [nc]]  # 29: Detect(P3, P4, P5)
-
+  - [[22, 25, 28], 1, RTDETRDecoder, [nc]] # 29: Detect(P3, P4, P5)
