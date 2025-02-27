@@ -74,9 +74,9 @@ backbone:
   - [0, 1, TorchVision, [768, swin_v2_t, DEFAULT, True, 4, True]] # 7
   - [-1, 1, Index, [192, 4]] # 8
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] # 9 (multiscale 1)
-  - [6, 1, Index, [384, 6]] # 10
+  - [7, 1, Index, [384, 6]] # 10
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] # 11 (multiscale 2)
-  - [6, 1, Index, [768, 9]] # 12
+  - [7, 1, Index, [768, 9]] # 12
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] # 13 (multiscale 3)
   - [-1, 1, SPPF, [768, 3]]  # 14: Add SPPF for Swin Transformer (768 channels, kernel size 5)
   - [-1, 1, EMA, [768]] # 15
