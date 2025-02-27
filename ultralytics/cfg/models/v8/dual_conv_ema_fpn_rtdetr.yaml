@@ -85,7 +85,7 @@ backbone:
   - [[3, 9], 1, Concat, [1]] # 16 concat scale 2 (384 + 384 = 768 channels) 14
   - [-1, 1, EMA, [768]]      # 17 EMA for scale 2 15
 
-  - [[4, 12], 1, Concat, [1]] # 18 concat scale 3 (768 + 768 = 1536 channels) 16
+  - [[4, 11], 1, Concat, [1]] # 18 concat scale 3 (768 + 768 = 1536 channels) 16
   - [-1, 1, EMA, [1536]]      # 19 EMA for scale 3 17
 
 head:
