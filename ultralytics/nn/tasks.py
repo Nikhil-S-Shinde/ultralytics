@@ -1051,8 +1051,10 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
         #Add bifpn_concat structure
-        elif m in [Concat, BiFPN_Concat2, BiFPN_Concat3]:
-            c2 = sum(ch[x] for x in f)
+        # elif m in [Concat, BiFPN_Concat2, BiFPN_Concat3]:
+            # c2 = sum(ch[x] for x in f)
+        elif m in [BiFPN_Concat2, BiFPN_Concat3]:
+            c2 = ch[f[0]]
         elif m in frozenset({Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}):
             args.append([ch[x] for x in f])
             if m is Segment:
