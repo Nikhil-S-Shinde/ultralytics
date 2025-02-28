@@ -54,7 +54,7 @@ head:
   - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #35
 
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #36
-  - [[34, 25], 1, BiFPN_Concat, [1]] #37 PQR
+  - [[34, 25], 1, BiFPN_Concat2, [1]] #37 PQR
   - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #38
 
   - [-1, 1, DWConv, [256, 3, 2]] #39
