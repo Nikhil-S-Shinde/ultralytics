@@ -82,7 +82,11 @@ head:
   - [[-1, 44], 1, BiFPN_Concat2, [1]] # 55 XYZ + XY + Y + X
   - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #56
 
-  - [[50,53,56], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 25
+  - [53, 1, C3k2, [512, True]] #57
+  - [56, 1, C3k2, [1024, True]] #58
+
+  # - [[50,53,56], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 25
+  - [[50,57,58], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 25
   
 
 # head:
