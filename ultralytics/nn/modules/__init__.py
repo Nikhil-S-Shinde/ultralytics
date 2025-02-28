@@ -75,6 +75,7 @@ from .conv import (
     SpatialAttention,
     BiFPN_Concat2,
     BiFPN_Concat3,
+    DepthwiseConvBlock,
 )
 from .head import OBB, Classify, Detect, Pose, RTDETRDecoder, Segment, WorldDetect, v10Detect
 from .transformer import (
@@ -166,4 +167,5 @@ __all__ = (
     "EMA",
     "BiFPN_Concat2",
     "BiFPN_Concat3",
+    "DepthwiseConvBlock",
 )
