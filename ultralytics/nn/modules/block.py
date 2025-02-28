@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 from ultralytics.utils.torch_utils import fuse_conv_and_bn
 
-from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, autopad
+from .conv import Conv, DWConv, GhostConv, LightConv, RepConv, autopad, DepthwiseConvBlock
 from .transformer import TransformerBlock
 
 __all__ = (
@@ -229,8 +229,10 @@ class C2f(nn.Module):
         """Initializes a CSP bottleneck with 2 convolutions and n Bottleneck blocks for faster processing."""
         super().__init__()
         self.c = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, 2 * self.c, 1, 1)
-        self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        # self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+        # self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+        self.cv1 = DepthwiseConvBlock(c1=c1, c2=2 * self.c, k=1, s=1)  # changed args
+        self.cv2 = DepthwiseConvBlock(c1=(2 + n) * self.c, c2=c2, k=1, s=1)  # changed args
         self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
 
     def forward(self, x):
@@ -339,8 +341,10 @@ class Bottleneck(nn.Module):
         """Initializes a standard bottleneck module with optional shortcut connection and configurable parameters."""
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
-        self.cv1 = Conv(c1, c_, k[0], 1)
-        self.cv2 = Conv(c_, c2, k[1], 1, g=g)
+        # self.cv1 = Conv(c1, c_, k[0], 1)
+        # self.cv2 = Conv(c_, c2, k[1], 1, g=g)
+        self.cv1 = DepthwiseConvBlock(c1=c1, c2=c_, k=k[0], s=1)  # changed args
+        self.cv2 = DepthwiseConvBlock(c1=c_, c2=c2, k=k[1], s=1)  # changed args
         self.add = shortcut and c1 == c2
 
     def forward(self, x):
