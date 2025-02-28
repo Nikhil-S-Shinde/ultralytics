@@ -33,7 +33,7 @@ backbone:
   - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] # 24 (1, 256, 20, 20)
 
 head:
-  - [[16, 19, 22], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 25
+  - [[18, 21, 24], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 25
   
 
 # head:
