@@ -24,8 +24,28 @@ __all__ = (
     "Index",
     "BiFPN_Concat2",
     "BiFPN_Concat3",
+    "DepthwiseConvBlock",
 )
 
+class DepthwiseConvBlock(nn.Module):
+    """Depthwise Separable Convolution with args(ch_in, ch_out, kernel, stride, padding, dilation, activation)."""
+    default_act = nn.SiLU()  # default activation, consistent with YOLOv8
+
+    def __init__(self, c1, c2, k=3, s=1, p=None, d=1, act=True):
+        """Initialize Depthwise Separable Convolution layer with given arguments."""
+        super().__init__()
+        self.depthwise = nn.Conv2d(c1, c1, k, s, autopad(k, p, d), groups=c1, dilation=d, bias=False)
+        self.pointwise = nn.Conv2d(c1, c2, 1, 1, 0, groups=1, bias=False)
+        self.bn = nn.BatchNorm2d(c2, momentum=0.9997, eps=4e-5)
+        self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
+
+    def forward(self, x):
+        """Apply depthwise and pointwise convolutions, batch normalization, and activation."""
+        x = self.depthwise(x)
+        x = self.pointwise(x)
+        x = self.bn(x)
+        return self.act(x)
+        
 # Combine with BiFPN to set learnable parameters and learn the weights of different branches
 # Two branches concat operation
 class BiFPN_Concat2(nn.Module):
