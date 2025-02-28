@@ -35,7 +35,7 @@ backbone:
   - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] # 22 (1, 256, 20, 20)
 
 head:
-  - [22, 1, Upsample, [None, 2, "nearest"]]  # 23 to 80, 80
+  - [22, 1, nn.Upsample, [None, 2, "nearest"]]  # 23 to 80, 80
   - [[-1,19], BiFPN_Concat2, [1]] #24
   - [-1, 1, C3k2, [512, False]] #25
 
