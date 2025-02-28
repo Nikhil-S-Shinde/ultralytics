@@ -22,7 +22,7 @@ backbone:
   #concat
   - [[2, 7], 1, Concat, [1]] # 12 concat scale 1
   - [-1, 1, EMA, [384]] # 13 ((192 + 192 = 384} (80, 80)
-  - [-1, 1, DepthwiseConvBlock, [6, 3, 1]] #14 (1, 256, 80, 80) C
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #14 (1, 256, 80, 80) C
   
   - [[3, 9], 1, Concat, [1]] # 15 concat scale 1
   - [-1, 1, EMA, [768]] # 16 ((384 + 384 = 768} (40, 40)
