@@ -10,32 +10,34 @@ backbone:
   - [1, 1, Index, [384, 6]]  # extracts 6th output (1, 384, 40, 40) - 3
   - [1, 1, Index, [768, 8]]  # extracts 8th output (1, 768, 20, 20) - 4
   - [-1, 1, SPPF, [768, 5]] # -5
+  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] # 6
   
   # Swin track
-  - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] #6
-  - [-1, 1, Index, [192 ,4]] #7
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #8 multiscale 1
-  - [6, 1, Index, [384, 6]] #9 
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #10 multiscale 2 
-  - [6, 1, Index, [768, 9]] #11 
-  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #12 
-  - [-1, 1, SPPF, [768, 5]] #13 multiscale 3
+  - [0, 1, TorchVision, [768, swin_t, DEFAULT, True, 4, True]] #7
+  - [-1, 1, Index, [192 ,4]] #8
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #9 multiscale 1
+  - [7, 1, Index, [384, 6]] #10 
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #11 multiscale 2 
+  - [7, 1, Index, [768, 9]] #12
+  - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #13 
+  - [-1, 1, SPPF, [768, 5]] #14 multiscale 3
+  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #15
 
   #concat
-  - [[2, 8], 1, Concat, [1]] # 14 concat scale 1
-  - [-1, 1, EMA, [384]] # 15 ((192 + 192 = 384} (80, 80)
-  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #16 (1, 256, 80, 80)
+  - [[2, 9], 1, Concat, [1]] # 16 concat scale 1
+  - [-1, 1, EMA, [384]] # 17 ((192 + 192 = 384} (80, 80)
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #18 (1, 256, 80, 80)
   
-  - [[3, 10], 1, Concat, [1]] # 17 concat scale 1
-  - [-1, 1, EMA, [768]] # 18 ((384 + 384 = 768} (40, 40)
-  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #19 (1, 256, 40, 40)
+  - [[3, 11], 1, Concat, [1]] # 19 concat scale 1
+  - [-1, 1, EMA, [768]] # 20 ((384 + 384 = 768} (40, 40)
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #21 (1, 256, 40, 40)
   
-  - [[5, 13], 1, Concat, [1]] # 20 concat scale 1
-  - [-1, 1, EMA, [1536]] # 21 ((768 + 768 = 1536} (20, 20)
-  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] # 22 (1, 256, 20, 20)
+  - [[6, 15], 1, Concat, [1]] # 22 concat scale 1
+  - [-1, 1, EMA, [1024]] # 23 ((768 + 768 = 1536} (20, 20)
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] # 24 (1, 256, 20, 20)
 
 head:
-  - [[16, 19, 22], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
+  - [[16, 19, 22], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 25
   
 
 # head:
