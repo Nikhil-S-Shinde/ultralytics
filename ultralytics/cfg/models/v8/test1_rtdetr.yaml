@@ -45,9 +45,9 @@ head:
   - [[26, 22, 17],1, BiFPN_Concat3, [1]] #28 ABC + AB + B
   - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #29
 
-  -[-1, DWConv, [256, 3, 2]] #30
-  -[[28, 20], 1, BiFPN_Concat2, [1]] #31 ABC + AB + B + A
-  -[-1, 1, DepthwiseConvBlock, [256, 3, 1]] #32
+  - [-1, DWConv, [256, 3, 2]] #30
+  - [[28, 20], 1, BiFPN_Concat2, [1]] #31 ABC + AB + B + A
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #32
 
   - [[26,29,32], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 25
   
