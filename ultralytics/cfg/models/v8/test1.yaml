@@ -23,33 +23,44 @@ backbone:
 
   #concat
   - [[2, 8], 1, Concat, [1]] # 14 concat scale 1
-  - [-1, 1, EMA, [384]] # 15 ((192 + 192 = 384} 
+  - [-1, 1, EMA, [384]] # 15 ((192 + 192 = 384} (80, 80)
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #16 (1, 256, 80, 80)
   
-  - [[3, 10], 1, Concat, [1]] # 16 concat scale 1
-  - [-1, 1, EMA, [768]] # 17 ((384 + 384 = 768}
+  - [[3, 10], 1, Concat, [1]] # 17 concat scale 1
+  - [-1, 1, EMA, [768]] # 18 ((384 + 384 = 768} (40, 40)
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #19 (1, 256, 40, 40)
   
-  - [[5, 13], 1, Concat, [1]] # 18 concat scale 1
-  - [-1, 1, EMA, [1536]] # 19 ((768 + 768 = 1536}
+  - [[5, 13], 1, Concat, [1]] # 20 concat scale 1
+  - [-1, 1, EMA, [1536]] # 21 ((768 + 768 = 1536} (20, 20)
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] # 22 (1, 256, 20, 20)
 
 head:
-# Top-Down Pathway
-  - [19, 1, nn.Upsample, [None, 2, "nearest"]]  # Upsample EMA3 to match Scale 2 (index 20) 
-  - [[-1, 17], 1, Concat, [1]]                 # Concatenate EMA3 (upsampled) + EMA2 (index 21) 
-  - [-1, 1, C3k2, [512, False]]                # Apply C3k2 on concatenated features (index 22) 
+  - [22, 1, Upsample, [None, 2, "nearest"]]  # 23 to 80, 80
+  - [[-1,19], BiFPN_Concat2, [1]] #24
+  - [-1, 1, C3k2, [512, False]] #25
 
-  - [22, 1, nn.Upsample, [None, 2, "nearest"]]  # Upsample to match Scale 1 (index 23) 
-  - [[-1, 15], 1, Concat, [1]]                 # Concatenate with EMA1 (index 24) 
-  - [-1, 1, C3k2, [256, False]]                # Apply C3k2 on concatenated features (index 25) 
+  - [[25, 25, 25], 1, Detect, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
+  
 
-  # Bottom-Up Pathway
-  - [25, 1, DWConv, [256, 3, 2]]    # Downsample Scale 1 (index 26) 24
-  - [[-1, 22], 1, Concat, [1]]    # Concatenate (Scale 1 -> Scale 2) (index 27) 25
-  - [-1, 1, C3k2, [512, False]]   # Apply C3k2 (index 28) 26
+# head:
+# # Top-Down Pathway
+#   - [19, 1, nn.Upsample, [None, 2, "nearest"]]  # Upsample EMA3 to match Scale 2 (index 20) 
+#   - [[-1, 17], 1, Concat, [1]]                 # Concatenate EMA3 (upsampled) + EMA2 (index 21) 
+#   - [-1, 1, C3k2, [512, False]]                # Apply C3k2 on concatenated features (index 22) 
 
-  - [28, 1, DWConv, [512, 3, 2]]    # Downsample Scale 2 (index 29) 27
-  - [[-1, 19], 1, Concat, [1]]    # Concatenate with EMA3 (Scale 3) (index 30) 28
-  - [-1, 1, C3k2, [1024, False]]  # Apply C3k2 (index 31) 29
+#   - [22, 1, nn.Upsample, [None, 2, "nearest"]]  # Upsample to match Scale 1 (index 23) 
+#   - [[-1, 15], 1, Concat, [1]]                 # Concatenate with EMA1 (index 24) 
+#   - [-1, 1, C3k2, [256, False]]                # Apply C3k2 on concatenated features (index 25) 
 
-  # Detection
-  # - [[23, 26, 29], 1, Detect, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
-  - [[25, 28, 31], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
+#   # Bottom-Up Pathway
+#   - [25, 1, DWConv, [256, 3, 2]]    # Downsample Scale 1 (index 26) 24
+#   - [[-1, 22], 1, Concat, [1]]    # Concatenate (Scale 1 -> Scale 2) (index 27) 25
+#   - [-1, 1, C3k2, [512, False]]   # Apply C3k2 (index 28) 26
+
+#   - [28, 1, DWConv, [512, 3, 2]]    # Downsample Scale 2 (index 29) 27
+#   - [[-1, 19], 1, Concat, [1]]    # Concatenate with EMA3 (Scale 3) (index 30) 28
+#   - [-1, 1, C3k2, [1024, False]]  # Apply C3k2 (index 31) 29
+
+#   # Detection
+#   # - [[23, 26, 29], 1, Detect, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
+#   - [[25, 28, 31], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 30
