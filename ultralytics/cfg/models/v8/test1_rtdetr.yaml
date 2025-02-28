@@ -22,15 +22,15 @@ backbone:
   #concat
   - [[2, 7], 1, Concat, [1]] # 12 (1, 384, 80, 80)
   - [-1, 1, EMA, [384]] # 13 (1, 384, 80, 80)
-  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #14 (1, 256, 80, 80) C
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #14 (1, 256, 80, 80) C - make channels same
   
   - [[3, 9], 1, Concat, [1]] # 15 (1, 768, 40, 40)
   - [-1, 1, EMA, [768]] # 16 (1, 768, 40, 40)
-  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #17 (1, 256, 40, 40) B
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #17 (1, 256, 40, 40) B - make channels same
   
   - [[4, 11], 1, Concat, [1]] # 18 (1, 1536, 20, 20)
   - [-1, 1, EMA, [1536]] # 19 (1, 1536, 20, 20)
-  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] # 20 (1, 256, 20, 20) A
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] # 20 (1, 256, 20, 20) A - make channels same
 
 head:
 ############################################################################################BLOCK 1
@@ -55,18 +55,34 @@ head:
   - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #35 (1, 256, 40, 40)
 
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #36 (1, 256, 80, 80)
-  - [[-1, 26], 1, BiFPN_Concat2, [1]] #37 PQR (1, 256, 80, 80)
+  - [[-1, 26], 1, BiFPN_Concat2, [1]] #37 PQR = Z (1, 256, 80, 80)
   - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #38 (1, 256, 80, 80)
 
   - [-1, 1, DWConv, [256, 3, 2]] #39 (1, 256, 40, 40)
-  - [[-1, 35, 29], 1, BiFPN_Concat3, [1]] #40 PQR + PQ + Q (1, 256, 40, 40)
+  - [[-1, 35, 29], 1, BiFPN_Concat3, [1]] #40 PQR + PQ + Q = Y (1, 256, 40, 40)
   - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #41 (1, 256, 40, 40)
 
   - [-1, 1, DWConv, [256, 3, 2]] #42 (1, 256, 20, 20)
-  - [[-1, 32], 1, BiFPN_Concat2, [1]] #43 PQR + PQ + Q + P (1, 256, 20, 20)
+  - [[-1, 32], 1, BiFPN_Concat2, [1]] #43 PQR + PQ + Q + P = X (1, 256, 20, 20)
   - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #44 (1, 256, 20, 20)
+##########################################################################################BLOCK3
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]] # 45 (1, 256, 40, 40)
+  - [[-1, 41], 1, BiFPN_Concat2, [1]] # 46 XY (1, 256, 40, 40)
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #47 (1, 256, 40, 40)
 
-  - [[38,41,44], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 25
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #48 (1, 256, 80, 80)
+  - [[-1, 38], 1, BiFPN_Concat2, [1]] #49 XYZ (1, 256, 80 80)
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #50 (1, 256, 80, 80)
+
+  - [-1, 1, DWConv, [256, 3, 2]] #51 (1, 256, 40, 40)
+  - [[-1, 47, 41], 1, BiFPN_Concat3, [1]] #52 XYZ + XY + Y (1, 256, 40, 40)
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] # 53 (1, 256, 40, 40)
+
+  - [-1, 1, DWConv, [256, 3, 2]] #54 (1, 256, 20, 20)
+  - [[-1, 44], 1, BiFPN_Concat2, [1]] # 55 XYZ + XY + Y + X
+  - [-1, 1, DepthwiseConvBlock, [256, 3, 1]] #56
+
+  - [[50,53,56], 1, RTDETRDecoder, [nc]]  # Pass P3, P4, P5 to Detect head (index 32) 25
   
 
 # head:
