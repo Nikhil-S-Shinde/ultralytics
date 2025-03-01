@@ -59,6 +59,7 @@ from .block import (
     TorchVision,
     DWC2f,
     DWBottleneck,
+    C2fGhost,
 
 )
 from .conv import (
@@ -173,4 +174,5 @@ __all__ = (
     "DepthwiseConvBlock",
     "DWC2f",
     "DWBottleneck",
+    "C2fGhost",
 )
