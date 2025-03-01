@@ -60,6 +60,8 @@ from .block import (
     DWC2f,
     DWBottleneck,
     C2fGhost,
+    C3k2Ghost,
+    C3kGhost,
 
 )
 from .conv import (
@@ -175,4 +177,6 @@ __all__ = (
     "DWC2f",
     "DWBottleneck",
     "C2fGhost",
+    "C3k2Ghost",
+    "C3kGhost",
 )
