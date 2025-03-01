@@ -65,6 +65,8 @@ from ultralytics.nn.modules import (
     v10Detect,
     EMA,
     DepthwiseConvBlock,
+    DWC2f,
+    DWBottleneck,
 )
 from ultralytics.nn.modules.conv import BiFPN_Concat2, BiFPN_Concat3, DepthwiseConvBlock
 from ultralytics.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, colorstr, emojis, yaml_load
@@ -984,6 +986,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             C2fCIB,
             EMA,
             DepthwiseConvBlock,
+            DWC2f,
+            DWBottleneck,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
