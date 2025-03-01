@@ -55,6 +55,8 @@ __all__ = (
     "C2fGhost",
     "C3k2Ghost",
     "C3kGhost",
+    "DWC2f",
+    "DWC3k2",
 )
 
 
@@ -804,6 +806,17 @@ class C3f(nn.Module):
 
 
 class C3k2(C2f):
+    """Faster Implementation of CSP Bottleneck with 2 convolutions."""
+
+    def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True):
+        """Initializes the C3k2 module, a faster CSP Bottleneck with 2 convolutions and optional C3k blocks."""
+        super().__init__(c1, c2, n, shortcut, g, e)
+        self.m = nn.ModuleList(
+            C3k(self.c, self.c, 2, shortcut, g) if c3k else Bottleneck(self.c, self.c, shortcut, g) for _ in range(n)
+        )
+
+
+class DWC3k2(DWC2f):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
     def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True):
