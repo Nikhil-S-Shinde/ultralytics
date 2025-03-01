@@ -57,11 +57,12 @@ from .block import (
     ResNetLayer,
     SCDown,
     TorchVision,
-    DWC2f,
     DWBottleneck,
     C2fGhost,
     C3k2Ghost,
     C3kGhost,
+    DWC2f,
+    DWC3k2,
 
 )
 from .conv import (
@@ -174,9 +175,10 @@ __all__ = (
     "BiFPN_Concat2",
     "BiFPN_Concat3",
     "DepthwiseConvBlock",
-    "DWC2f",
     "DWBottleneck",
     "C2fGhost",
     "C3k2Ghost",
     "C3kGhost",
+    "DWC2f",
+    "DWC3k2",
 )
