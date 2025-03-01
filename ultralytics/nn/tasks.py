@@ -68,6 +68,8 @@ from ultralytics.nn.modules import (
     DWC2f,
     DWBottleneck,
     C2fGhost,
+    C3k2Ghost,
+    C3kGhost,
 
 )
 from ultralytics.nn.modules.conv import BiFPN_Concat2, BiFPN_Concat3, DepthwiseConvBlock
@@ -991,6 +993,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             DWC2f,
             DWBottleneck,
             C2fGhost,
+            C3k2Ghost,
+            C3kGhost,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
