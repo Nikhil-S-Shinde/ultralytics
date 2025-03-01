@@ -821,7 +821,7 @@ class C3k2Ghost(C2fGhost):
         super().__init__(c1, c2, n, shortcut, g, e)
         # Replace the ModuleList with either C3k_Ghost or GhostBottleneck
         self.m = nn.ModuleList(
-            C3k_Ghost(self.c, self.c, 2, shortcut, g) if c3k else GhostBottleneck(
+            C3kGhost(self.c, self.c, 2, shortcut, g) if c3k else GhostBottleneck(
                 self.c,  # c1
                 self.c,  # c2
                 k=3,    # kernel size
