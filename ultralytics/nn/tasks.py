@@ -65,14 +65,14 @@ from ultralytics.nn.modules import (
     v10Detect,
     EMA,
     DepthwiseConvBlock,
-    DWBottleneck,
-    C2fGhost,
-    C3k2Ghost,
-    C3kGhost,
-    DWC2f,
-    DWC3k2,
-    DWC3k,
-    DWBottleneck,
+    # DWBottleneck,
+    # C2fGhost,
+    # C3k2Ghost,
+    # C3kGhost,
+    # DWC2f,
+    # DWC3k2,
+    # DWC3k,
+    # DWBottleneck,
 
 )
 from ultralytics.nn.modules.conv import BiFPN_Concat2, BiFPN_Concat3, DepthwiseConvBlock
@@ -993,15 +993,15 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             C2fCIB,
             EMA,
             DepthwiseConvBlock,
-            DWC2f,
-            DWBottleneck,
-            C2fGhost,
-            C3k2Ghost,
-            C3kGhost,
-            DWC2f,
-            DWC3k2,            
-            DWC3k,
-            DWBottleneck,
+            # DWC2f,
+            # DWBottleneck,
+            # C2fGhost,
+            # C3k2Ghost,
+            # C3kGhost,
+            # DWC2f,
+            # DWC3k2,            
+            # DWC3k,
+            # DWBottleneck,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1022,7 +1022,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             C2PSA,
             BiFPN_Concat2,
             BiFPN_Concat3,
-            DepthwiseConvBlock
+            # DepthwiseConvBlock,
         }
     )
     for i, (f, n, m, args) in enumerate(d["backbone"] + d["head"]):  # from, number, module, args
