@@ -1022,7 +1022,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             C2PSA,
             BiFPN_Concat2,
             BiFPN_Concat3,
-            # DepthwiseConvBlock,
+            DWC3k2,
         }
     )
     for i, (f, n, m, args) in enumerate(d["backbone"] + d["head"]):  # from, number, module, args
