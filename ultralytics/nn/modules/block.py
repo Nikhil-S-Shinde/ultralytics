@@ -50,14 +50,14 @@ __all__ = (
     "PSA",
     "SCDown",
     "TorchVision",
-    "DWBottleneck",
-    "C2fGhost",
-    "C3k2Ghost",
-    "C3kGhost",
-    "DWC2f",
-    "DWC3k2",
-    "DWC3k",
-    "DWBottleneck",
+    # "DWBottleneck",
+    # "C2fGhost",
+    # "C3k2Ghost",
+    # "C3kGhost",
+    # "DWC2f",
+    # "DWC3k2",
+    # "DWC3k",
+    # "DWBottleneck",
 )
 
 
@@ -255,64 +255,64 @@ class C2f(nn.Module):
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
         
-class DWC2f(nn.Module):
-    """Faster Implementation of CSP Bottleneck with 2 convolutions."""
+# class DWC2f(nn.Module):
+#     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
-        """Initializes a CSP bottleneck with 2 convolutions and n Bottleneck blocks for faster processing."""
-        super().__init__()
-        self.c = int(c2 * e)  # hidden channels
-        # self.cv1 = Conv(c1, 2 * self.c, 1, 1)
-        # self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-        self.cv1 = DepthwiseConvBlock(c1=c1, c2=2 * self.c, k=1, s=1)  # changed args
-        self.cv2 = DepthwiseConvBlock(c1=(2 + n) * self.c, c2=c2, k=1, s=1)  # changed args
-        self.m = nn.ModuleList(DWBottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
+#         """Initializes a CSP bottleneck with 2 convolutions and n Bottleneck blocks for faster processing."""
+#         super().__init__()
+#         self.c = int(c2 * e)  # hidden channels
+#         # self.cv1 = Conv(c1, 2 * self.c, 1, 1)
+#         # self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
+#         self.cv1 = DepthwiseConvBlock(c1=c1, c2=2 * self.c, k=1, s=1)  # changed args
+#         self.cv2 = DepthwiseConvBlock(c1=(2 + n) * self.c, c2=c2, k=1, s=1)  # changed args
+#         self.m = nn.ModuleList(DWBottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
 
-    def forward(self, x):
-        """Forward pass through C2f layer."""
-        y = list(self.cv1(x).chunk(2, 1))
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
+#     def forward(self, x):
+#         """Forward pass through C2f layer."""
+#         y = list(self.cv1(x).chunk(2, 1))
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
 
-    def forward_split(self, x):
-        """Forward pass using split() instead of chunk()."""
-        y = self.cv1(x).split((self.c, self.c), 1)
-        y = [y[0], y[1]]
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
+#     def forward_split(self, x):
+#         """Forward pass using split() instead of chunk()."""
+#         y = self.cv1(x).split((self.c, self.c), 1)
+#         y = [y[0], y[1]]
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
 
 
-class C2fGhost(nn.Module):
-    """CSP Bottleneck with 2 convolutions with Ghost components."""
+# class C2fGhost(nn.Module):
+#     """CSP Bottleneck with 2 convolutions with Ghost components."""
 
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
-        """Initialize C2f_Ghost module with the same parameters as original C2f."""
-        super().__init__()
-        self.c = int(c2 * e)  # hidden channels
-        self.cv1 = GhostConv(c1, 2 * self.c, 1, 1)  # first conv remains 1x1
-        self.cv2 = GhostConv((2 + n) * self.c, c2, 1)  # output conv remains 1x1
-        # Use original GhostBottleneck parameters (k=3, s=1)
-        self.m = nn.ModuleList(
-            GhostBottleneck(
-                self.c,  # c1
-                self.c,  # c2
-                k=3,    # kernel size
-                s=1     # stride
-            ) for _ in range(n)
-        )
+#     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
+#         """Initialize C2f_Ghost module with the same parameters as original C2f."""
+#         super().__init__()
+#         self.c = int(c2 * e)  # hidden channels
+#         self.cv1 = GhostConv(c1, 2 * self.c, 1, 1)  # first conv remains 1x1
+#         self.cv2 = GhostConv((2 + n) * self.c, c2, 1)  # output conv remains 1x1
+#         # Use original GhostBottleneck parameters (k=3, s=1)
+#         self.m = nn.ModuleList(
+#             GhostBottleneck(
+#                 self.c,  # c1
+#                 self.c,  # c2
+#                 k=3,    # kernel size
+#                 s=1     # stride
+#             ) for _ in range(n)
+#         )
 
-    def forward(self, x):
-        """Forward pass through C2f_Ghost layer."""
-        y = list(self.cv1(x).chunk(2, 1))
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
+#     def forward(self, x):
+#         """Forward pass through C2f_Ghost layer."""
+#         y = list(self.cv1(x).chunk(2, 1))
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
 
-    def forward_split(self, x):
-        """Forward pass using split() instead of chunk()."""
-        y = self.cv1(x).split((self.c, self.c), 1)
-        y = [y[0], y[1]]
-        y.extend(m(y[-1]) for m in self.m)
-        return self.cv2(torch.cat(y, 1))
+#     def forward_split(self, x):
+#         """Forward pass using split() instead of chunk()."""
+#         y = self.cv1(x).split((self.c, self.c), 1)
+#         y = [y[0], y[1]]
+#         y.extend(m(y[-1]) for m in self.m)
+#         return self.cv2(torch.cat(y, 1))
 
 class C3(nn.Module):
     """CSP Bottleneck with 3 convolutions."""
@@ -414,22 +414,22 @@ class Bottleneck(nn.Module):
         """Applies the YOLO FPN to input data."""
         return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
-class DWBottleneck(nn.Module):
-    """Standard bottleneck."""
+# class DWBottleneck(nn.Module):
+#     """Standard bottleneck."""
 
-    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
-        """Initializes a standard bottleneck module with optional shortcut connection and configurable parameters."""
-        super().__init__()
-        c_ = int(c2 * e)  # hidden channels
-        # self.cv1 = Conv(c1, c_, k[0], 1)
-        # self.cv2 = Conv(c_, c2, k[1], 1, g=g)
-        self.cv1 = DepthwiseConvBlock(c1=c1, c2=c_, k=k[0], s=1)  # changed args
-        self.cv2 = DepthwiseConvBlock(c1=c_, c2=c2, k=k[1], s=1)  # changed args
-        self.add = shortcut and c1 == c2
+#     def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
+#         """Initializes a standard bottleneck module with optional shortcut connection and configurable parameters."""
+#         super().__init__()
+#         c_ = int(c2 * e)  # hidden channels
+#         # self.cv1 = Conv(c1, c_, k[0], 1)
+#         # self.cv2 = Conv(c_, c2, k[1], 1, g=g)
+#         self.cv1 = DepthwiseConvBlock(c1=c1, c2=c_, k=k[0], s=1)  # changed args
+#         self.cv2 = DepthwiseConvBlock(c1=c_, c2=c2, k=k[1], s=1)  # changed args
+#         self.add = shortcut and c1 == c2
 
-    def forward(self, x):
-        """Applies the YOLO FPN to input data."""
-        return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
+#     def forward(self, x):
+#         """Applies the YOLO FPN to input data."""
+#         return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
 
 
 class BottleneckCSP(nn.Module):
@@ -817,31 +817,31 @@ class C3k2(C2f):
         )
 
 
-class DWC3k2(DWC2f):
-    """Faster Implementation of CSP Bottleneck with 2 convolutions."""
+# class DWC3k2(DWC2f):
+#     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
-    def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True):
-        """Initializes the C3k2 module, a faster CSP Bottleneck with 2 convolutions and optional C3k blocks."""
-        super().__init__(c1, c2, n, shortcut, g, e)
-        self.m = nn.ModuleList(
-            DWC3k(self.c, self.c, 2, shortcut, g) if c3k else DWBottleneck(self.c, self.c, shortcut, g) for _ in range(n)
-        )
+#     def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True):
+#         """Initializes the C3k2 module, a faster CSP Bottleneck with 2 convolutions and optional C3k blocks."""
+#         super().__init__(c1, c2, n, shortcut, g, e)
+#         self.m = nn.ModuleList(
+#             DWC3k(self.c, self.c, 2, shortcut, g) if c3k else DWBottleneck(self.c, self.c, shortcut, g) for _ in range(n)
+#         )
 
-class C3k2Ghost(C2fGhost):
-    """Ghost version of C3k2: CSP Bottleneck with 2 convolutions."""
+# class C3k2Ghost(C2fGhost):
+#     """Ghost version of C3k2: CSP Bottleneck with 2 convolutions."""
 
-    def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True):
-        """Initialize C3k2_Ghost module."""
-        super().__init__(c1, c2, n, shortcut, g, e)
-        # Replace the ModuleList with either C3k_Ghost or GhostBottleneck
-        self.m = nn.ModuleList(
-            C3kGhost(self.c, self.c, 2, shortcut, g) if c3k else GhostBottleneck(
-                self.c,  # c1
-                self.c,  # c2
-                k=3,    # kernel size
-                s=1     # stride
-            ) for _ in range(n)
-        )
+#     def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True):
+#         """Initialize C3k2_Ghost module."""
+#         super().__init__(c1, c2, n, shortcut, g, e)
+#         # Replace the ModuleList with either C3k_Ghost or GhostBottleneck
+#         self.m = nn.ModuleList(
+#             C3kGhost(self.c, self.c, 2, shortcut, g) if c3k else GhostBottleneck(
+#                 self.c,  # c1
+#                 self.c,  # c2
+#                 k=3,    # kernel size
+#                 s=1     # stride
+#             ) for _ in range(n)
+#         )
 
 class C3k(C3):
     """C3k is a CSP bottleneck module with customizable kernel sizes for feature extraction in neural networks."""
@@ -853,29 +853,29 @@ class C3k(C3):
         # self.m = nn.Sequential(*(RepBottleneck(c_, c_, shortcut, g, k=(k, k), e=1.0) for _ in range(n)))
         self.m = nn.Sequential(*(Bottleneck(c_, c_, shortcut, g, k=(k, k), e=1.0) for _ in range(n)))
 
-class DWC3k(C3):
-    """C3k is a CSP bottleneck module with customizable kernel sizes for feature extraction in neural networks."""
+# class DWC3k(C3):
+#     """C3k is a CSP bottleneck module with customizable kernel sizes for feature extraction in neural networks."""
 
-    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5, k=3):
-        """Initializes the C3k module with specified channels, number of layers, and configurations."""
-        super().__init__(c1, c2, n, shortcut, g, e)
-        c_ = int(c2 * e)  # hidden channels
-        # self.m = nn.Sequential(*(RepBottleneck(c_, c_, shortcut, g, k=(k, k), e=1.0) for _ in range(n)))
-        self.m = nn.Sequential(*(DWBottleneck(c_, c_, shortcut, g, k=(k, k), e=1.0) for _ in range(n)))
+#     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5, k=3):
+#         """Initializes the C3k module with specified channels, number of layers, and configurations."""
+#         super().__init__(c1, c2, n, shortcut, g, e)
+#         c_ = int(c2 * e)  # hidden channels
+#         # self.m = nn.Sequential(*(RepBottleneck(c_, c_, shortcut, g, k=(k, k), e=1.0) for _ in range(n)))
+#         self.m = nn.Sequential(*(DWBottleneck(c_, c_, shortcut, g, k=(k, k), e=1.0) for _ in range(n)))
 
-class C3kGhost(C3):
-    """Ghost version of C3k."""
+# class C3kGhost(C3):
+#     """Ghost version of C3k."""
 
-    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5, k=3):
-        """Initialize the Ghost C3k module."""
-        super().__init__(c1, c2, n, shortcut, g, e)
-        c_ = int(c2 * e)  # hidden channels
-        self.m = nn.Sequential(*(GhostBottleneck(
-            c_, 
-            c_,
-            k=k,
-            s=1
-        ) for _ in range(n)))
+#     def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5, k=3):
+#         """Initialize the Ghost C3k module."""
+#         super().__init__(c1, c2, n, shortcut, g, e)
+#         c_ = int(c2 * e)  # hidden channels
+#         self.m = nn.Sequential(*(GhostBottleneck(
+#             c_, 
+#             c_,
+#             k=k,
+#             s=1
+#         ) for _ in range(n)))
 
 
 class RepVGGDW(torch.nn.Module):
