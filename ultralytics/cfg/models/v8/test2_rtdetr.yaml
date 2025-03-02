@@ -22,15 +22,18 @@ backbone:
   #concat
   - [[2, 7], 1, Concat, [1]] # 12 (1, 384, 80, 80)
   - [-1, 1, EMA, [384]] # 13 (1, 384, 80, 80)
-  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #14 (1, 256, 80, 80) C - make channels same
+  # - [-1, 1, DepthwiseConvBloc, [384, 3, 1]] #14 (1, 256, 80, 80) C - make channels same
+  - [-1, 1, DWConv, [384, 3, 1]] #14 (1, 256, 80, 80) C - make channels same
   
   - [[3, 9], 1, Concat, [1]] # 15 (1, 768, 40, 40)
   - [-1, 1, EMA, [768]] # 16 (1, 768, 40, 40)
-  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #17 (1, 256, 40, 40) B - make channels same
+  # - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #17 (1, 256, 40, 40) B - make channels same
+  - [-1, 1, DWConv, [384, 3, 1]]
   
   - [[4, 11], 1, Concat, [1]] # 18 (1, 1536, 20, 20)
   - [-1, 1, EMA, [1536]] # 19 (1, 1536, 20, 20)
-  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] # 20 (1, 256, 20, 20) A - make channels same
+  # - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] # 20 (1, 256, 20, 20) A - make channels same
+  - [-1, 1, DWConv, [384, 3, 1]]
 
 head:
 ############################################################################################BLOCK 1
