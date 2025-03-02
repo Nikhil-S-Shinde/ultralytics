@@ -56,8 +56,8 @@ __all__ = (
     "C3kGhost",
     "DWC2f",
     "DWC3k2",
-    "DWC3k,
-    "DWBottleneck"
+    "DWC3k",
+    "DWBottleneck",
 )
 
 
