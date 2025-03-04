@@ -18,108 +18,108 @@ backbone:
   - [-1, 1, EMA, [1024]] #12 P5
 head:
   #make channels equal
-  - [3, 1, DWConv, [512, 3, 1]] # 13 (1, 512, 80, 80) P3
-  - [5, 1, DWConv, [512, 3, 1]] # 14 (1, 512, 40, 40) P4
-  - [7, 1, DWConv, [512, 3, 1]] # 15 (1, 512, 20, 20) P5
-  - [9, 1, DWConv, [512, 3, 1]] # 16 (1, 512, 10, 10) P6
-  - [12, 1, DWConv, [512, 3, 1]] # 17 (1, 512, 5, 5) P7
+  - [3, 1, DWConv, [384, 3, 1]] # 13 (1, 512, 80, 80) P3
+  - [5, 1, DWConv, [384, 3, 1]] # 14 (1, 512, 40, 40) P4
+  - [7, 1, DWConv, [384, 3, 1]] # 15 (1, 512, 20, 20) P5
+  - [9, 1, DWConv, [384, 3, 1]] # 16 (1, 512, 10, 10) P6
+  - [12, 1, DWConv, [384, 3, 1]] # 17 (1, 512, 5, 5) P7
 
 #BiFPN################################################################Block 1
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #18 (1, 512, 10, 10)
   - [[-1, 16], 1, BiFPN_Concat2, [1]] #19 (1, 512, 10, 10)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #20 (1, 512, 10, 10)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #20 (1, 512, 10, 10)
 
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #21 (1, 512, 20, 20)
   - [[-1, 15], 1, BiFPN_Concat2, [1]] #22 (1, 512, 20, 20)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #23 (1, 512, 20, 20)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #23 (1, 512, 20, 20)
   
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #24 (1, 512, 40, 40)
   - [[-1, 14], 1, BiFPN_Concat2, [1]] #25 (1, 512, 40, 40)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #26 (1, 512, 40, 40)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #26 (1, 512, 40, 40)
   
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #27 (1, 512, 80, 80)
   - [[-1, 13], 1, BiFPN_Concat2, [1]] #28 (1, 512, 80, 80)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #29 (1, 512, 80, 80)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #29 (1, 512, 80, 80)
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #30 (1, 512, 40, 40)
   - [[-1, 26, 14], 1, BiFPN_Concat3, [1]] #31 (1, 512, 40, 40)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #32 (1, 512, 40, 40)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #32 (1, 512, 40, 40)
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #33 (1, 512, 20, 20)
   - [[-1, 23, 15], 1, BiFPN_Concat3, [1]] #34 (1, 512, 20, 20)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #35 (1, 512, 20, 20)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #35 (1, 512, 20, 20)
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #36 (1, 512, 10, 10)
   - [[-1, 20, 16], 1, BiFPN_Concat3, [1]] #37 (1, 512, 10, 10)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #38 (1, 512, 10, 10)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #38 (1, 512, 10, 10)
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #39 (1, 512, 5, 5)
   - [[-1, 17], 1, BiFPN_Concat2, [1]] #40 (1, 512, 5, 5)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #41 (1, 512, 5, 5)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #41 (1, 512, 5, 5)
   #################################################################Block 2
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #42 (1, 512, 10, 10)
   - [[-1, 38], 1, BiFPN_Concat2, [1]] #43 (1, 512, 10, 10)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #44 (1, 512, 10, 10)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #44 (1, 512, 10, 10)
   
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #45 (1, 512, 20, 20)
   - [[-1, 35], 1, BiFPN_Concat2, [1]] #46 (1, 512, 20, 20)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #47 (1, 512, 20, 20)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #47 (1, 512, 20, 20)
   
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #48 (1, 512, 40, 40)
   - [[-1, 32], 1, BiFPN_Concat2, [1]] #49 (1, 512, 40, 40)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #50 (1, 512, 40, 40)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #50 (1, 512, 40, 40)
   
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #51 (1, 512, 80, 80)
   - [[-1, 29], 1, BiFPN_Concat2, [1]] #52 (1, 512, 80, 80)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #53 (1, 512, 80, 80)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #53 (1, 512, 80, 80)
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #54 (1, 512, 40, 40)
   - [[-1, 50, 32], 1, BiFPN_Concat3, [1]] #55 (1, 512, 40, 40)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #56 (1, 512, 40, 40)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #56 (1, 512, 40, 40)
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #57 (1, 512, 20, 20)
   - [[-1, 47, 35], 1, BiFPN_Concat3, [1]] #58 (1, 512, 20, 20)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #59 (1, 512, 20, 20)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #59 (1, 512, 20, 20)
   
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #60 (1, 512, 10, 10)
   - [[-1, 44, 38], 1, BiFPN_Concat3, [1]] #61 (1, 512, 10, 10)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #62 (1, 512, 10, 10)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #62 (1, 512, 10, 10)
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #63 (1, 512, 5, 5)
   - [[-1, 41], 1, BiFPN_Concat2, [1]] #64 (1, 512, 5, 5)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #65 (1, 512, 5, 5)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #65 (1, 512, 5, 5)
   #################################################################Block 3
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #66 (1, 512, 10, 10)
   - [[-1, 62], 1, BiFPN_Concat2, [1]] #67 (1, 512, 10, 10)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #68 (1, 512, 10, 10)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #68 (1, 512, 10, 10)
   
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #69 (1, 512, 20, 20)
   - [[-1, 59], 1, BiFPN_Concat2, [1]] #70 (1, 512, 20, 20)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #71 (1, 512, 20, 20)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #71 (1, 512, 20, 20)
   
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #72 (1, 512, 40, 40)
   - [[-1, 56], 1, BiFPN_Concat2, [1]] #73 (1, 512, 40, 40)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #74 (1, 512, 40, 40)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #74 (1, 512, 40, 40)
   
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #75 (1, 512, 80, 80)
   - [[-1, 53], 1, BiFPN_Concat2, [1]] #76 (1, 512, 80, 80)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #77 (1, 512, 80, 80)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #77 (1, 512, 80, 80)
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #78 (1, 512, 40, 40)
   - [[-1, 74, 56], 1, BiFPN_Concat3, [1]] #79 (1, 512, 40, 40)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #80 (1, 512, 40, 40)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #80 (1, 512, 40, 40)
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #81 (1, 512, 20, 20)
   - [[-1, 71, 59], 1, BiFPN_Concat3, [1]] #82 (1, 512, 20, 20)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #83 (1, 512, 20, 20)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #83 (1, 512, 20, 20)
   
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #84 (1, 512, 10, 10)
   - [[-1, 68, 62], 1, BiFPN_Concat3, [1]] #85 (1, 512, 10, 10)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #86 (1, 512, 10, 10)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #86 (1, 512, 10, 10)
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #87 (1, 512, 5, 5)
   - [[-1, 65], 1, BiFPN_Concat2, [1]] #88 (1, 512, 5, 5)
-  - [-1, 1, DepthwiseConvBlock, [512, 3, 1]] #89 (1, 512, 5, 5)
+  - [-1, 1, DepthwiseConvBlock, [384, 3, 1]] #89 (1, 512, 5, 5)
   
   
-  - [[41, 38, 35, 32, 29], 1, Detect, [nc]] #90
+  - [[41, 38, 35, 32, 29], 1, RTDETRDecoder, [nc]] #90
