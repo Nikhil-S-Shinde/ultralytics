@@ -356,7 +356,7 @@ class DeformableTransformerDecoderLayer(nn.Module):
         """Perform the forward pass through the entire decoder layer."""
         # Self attention
         q = k = self.with_pos_embed(embed, query_pos)
-        with torch.cuda.amp.autocast(enabled = False):
+        with torch.amp.autocast('cuda', enabled = False):
             q=q.float()
             k=k.float()
             embed_float = embed.float()
