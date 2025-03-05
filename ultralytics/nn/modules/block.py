@@ -258,15 +258,15 @@ class C2f(nn.Module):
 class DWC2f(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
-    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5, bn_momentum=0.1, bn_eps=1e-5):
         """Initializes a CSP bottleneck with 2 convolutions and n Bottleneck blocks for faster processing."""
         super().__init__()
         self.c = int(c2 * e)  # hidden channels
         # self.cv1 = Conv(c1, 2 * self.c, 1, 1)
         # self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
-        self.cv1 = DepthwiseConvBlock(c1=c1, c2=2 * self.c, k=1, s=1)  # changed args
-        self.cv2 = DepthwiseConvBlock(c1=(2 + n) * self.c, c2=c2, k=1, s=1)  # changed args
-        self.m = nn.ModuleList(DWBottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
+        self.cv1 = DepthwiseConvBlock(c1=c1, c2=2 * self.c, k=1, s=1, bn_momentum=bn_momentum, bn_eps=bn_eps)  # changed args
+        self.cv2 = DepthwiseConvBlock(c1=(2 + n) * self.c, c2=c2, k=1, s=1, bn_momentum=bn_momentum, bn_eps=bn_eps)  # changed args
+        self.m = nn.ModuleList(DWBottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0, bn_momentum=bn_momentum, bn_eps=bn_eps) for _ in range(n))
 
     def forward(self, x):
         """Forward pass through C2f layer."""
@@ -417,14 +417,14 @@ class Bottleneck(nn.Module):
 class DWBottleneck(nn.Module):
     """Standard bottleneck."""
 
-    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5):
+    def __init__(self, c1, c2, shortcut=True, g=1, k=(3, 3), e=0.5, bn_momentum=0.1, bn_eps=1e-5):
         """Initializes a standard bottleneck module with optional shortcut connection and configurable parameters."""
         super().__init__()
         c_ = int(c2 * e)  # hidden channels
         # self.cv1 = Conv(c1, c_, k[0], 1)
         # self.cv2 = Conv(c_, c2, k[1], 1, g=g)
-        self.cv1 = DepthwiseConvBlock(c1=c1, c2=c_, k=k[0], s=1)  # changed args
-        self.cv2 = DepthwiseConvBlock(c1=c_, c2=c2, k=k[1], s=1)  # changed args
+        self.cv1 = DepthwiseConvBlock(c1=c1, c2=c_, k=k[0], s=1, bn_momentum=bn_momentum, bn_eps=bn_eps)  # changed args
+        self.cv2 = DepthwiseConvBlock(c1=c_, c2=c2, k=k[1], s=1, bn_momentum=bn_momentum, bn_eps=bn_eps)  # changed args
         self.add = shortcut and c1 == c2
 
     def forward(self, x):
@@ -820,11 +820,11 @@ class C3k2(C2f):
 class DWC3k2(DWC2f):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
 
-    def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True):
+    def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True, bn_momentum=0.1, bn_eps=1e-5):
         """Initializes the C3k2 module, a faster CSP Bottleneck with 2 convolutions and optional C3k blocks."""
         super().__init__(c1, c2, n, shortcut, g, e)
         self.m = nn.ModuleList(
-            DWC3k(self.c, self.c, 2, shortcut, g) if c3k else DWBottleneck(self.c, self.c, shortcut, g) for _ in range(n)
+            DWC3k(self.c, self.c, 2, shortcut, g, bn_momentum=bn_momentum, bn_eps=bn_eps) if c3k else DWBottleneck(self.c, self.c, shortcut, g, bn_momentum=bn_momentum, bn_eps=bn_eps) for _ in range(n)
         )
 
 class C3k2Ghost(C2fGhost):
@@ -856,12 +856,12 @@ class C3k(C3):
 class DWC3k(C3):
     """C3k is a CSP bottleneck module with customizable kernel sizes for feature extraction in neural networks."""
 
-    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5, k=3):
+    def __init__(self, c1, c2, n=1, shortcut=True, g=1, e=0.5, k=3, bn_momentum=0.1, bn_eps=1e-5):
         """Initializes the C3k module with specified channels, number of layers, and configurations."""
         super().__init__(c1, c2, n, shortcut, g, e)
         c_ = int(c2 * e)  # hidden channels
         # self.m = nn.Sequential(*(RepBottleneck(c_, c_, shortcut, g, k=(k, k), e=1.0) for _ in range(n)))
-        self.m = nn.Sequential(*(DWBottleneck(c_, c_, shortcut, g, k=(k, k), e=1.0) for _ in range(n)))
+        self.m = nn.Sequential(*(DWBottleneck(c_, c_, shortcut, g, k=(k, k), e=1.0, bn_momentum=bn_momentum, bn_eps=bn_eps) for _ in range(n)))
 
 class C3kGhost(C3):
     """Ghost version of C3k."""
