@@ -31,13 +31,18 @@ class DepthwiseConvBlock(nn.Module):
     """Depthwise Separable Convolution with args(ch_in, ch_out, kernel, stride, padding, dilation, activation)."""
     default_act = nn.SiLU()  # default activation, consistent with YOLOv8
 
-    def __init__(self, c1, c2, k=3, s=1, p=None, d=1, act=True):
+    def __init__(self, c1, c2, k=3, s=1, p=None, d=1, act=True, bn_momentum=0.1, bn_eps=1e-5):
         """Initialize Depthwise Separable Convolution layer with given arguments."""
         super().__init__()
         self.depthwise = nn.Conv2d(c1, c1, k, s, autopad(k, p, d), groups=c1, dilation=d, bias=False)
         self.pointwise = nn.Conv2d(c1, c2, 1, 1, 0, groups=1, bias=False)
-        self.bn = nn.BatchNorm2d(c2, momentum=0.9997, eps=4e-5)
+        # self.bn = nn.BatchNorm2d(c2, momentum=0.9997, eps=4e-5)
+        self.bn = nn.BatchNorm2d(c2, momentum=bn_momentum, eps=bn_eps)
         self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
+
+        # Initialize weights using Kaiming initialization (suitable for ReLU-like activations, including SiLU)
+        nn.init.kaiming_normal_(self.depthwise.weight, mode='fan_out', nonlinearity='relu')
+        nn.init.kaiming_normal_(self.pointwise.weight, mode='fan_out', nonlinearity='relu')
 
     def forward(self, x):
         """Apply depthwise and pointwise convolutions, batch normalization, and activation."""
@@ -52,12 +57,21 @@ class BiFPN_Concat2(nn.Module):
     def __init__(self, dimension=1):
         super(BiFPN_Concat2, self).__init__()
         self.d = dimension
-        self.w = nn.Parameter(torch.ones(2, dtype=torch.float32), requires_grad=True)
+        # self.w = nn.Parameter(torch.ones(2, dtype=torch.float32), requires_grad=True)
+        
+        # Initialize weights with uniform distribution for better convergence
+        self.w = nn.Parameter(torch.empty(2, dtype=torch.float32))
+        nn.init.uniform_(self.w, 0, 1)  # Initialize weights between 0 and 1
+        self.relu = nn.ReLU()  # Ensure non-negative weights
+        
         self.epsilon = 0.0001
 
     def forward(self, x):
-        w = self.w
-        weight = w / (torch.sum(w, dim=0) + self.epsilon)  # 将权重进行归一化
+        # w = self.w
+
+        # Apply ReLU to ensure non-negative weights, then normalize
+        w = self.relu(self.w)
+        weight = w / (torch.sum(w, dim=0) + self.epsilon)
         # Fast normalized fusion
         # x = [weight[0] * x[0], weight[1] * x[1]]
         # return torch.cat(x, self.d)
@@ -68,15 +82,18 @@ class BiFPN_Concat3(nn.Module):
     def __init__(self, dimension=1):
         super(BiFPN_Concat3, self).__init__()
         self.d = dimension
-       # Set the learnable parameters. The function of nn.Parameter is to convert a non-trainable type Tensor into a trainable type parameter.
-        # And the parameter will be registered with the host model and become part of it, that is, model.parameters() will include this parameter
-        # So that when parameters are optimized, they can be automatically optimized together.
-        self.w = nn.Parameter(torch.ones(3, dtype=torch.float32), requires_grad=True)
+        # self.w = nn.Parameter(torch.ones(3, dtype=torch.float32), requires_grad=True)
+        
+        # Initialize weights with uniform distribution for better convergence
+        self.w = nn.Parameter(torch.empty(3, dtype=torch.float32))
+        nn.init.uniform_(self.w, 0, 1)  # Initialize weights between 0 and 1
+        self.relu = nn.ReLU()  # Ensure non-negative weights
         self.epsilon = 0.0001
 
     def forward(self, x):
-        w = self.w
-        weight = w / (torch.sum(w, dim=0) + self.epsilon)  # 将权重进行归一化
+        # w = self.w
+        w = self.relu(self.w)
+        weight = w / (torch.sum(w, dim=0) + self.epsilon)
         # Fast normalized fusion
         # x = [weight[0] * x[0], weight[1] * x[1], weight[2] * x[2]]
         # return torch.cat(x, self.d)
