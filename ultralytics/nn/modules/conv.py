@@ -62,7 +62,7 @@ class BiFPN_Concat2(nn.Module):
         # Initialize weights with uniform distribution for better convergence
         self.w = nn.Parameter(torch.empty(2, dtype=torch.float32))
         nn.init.uniform_(self.w, 0, 1)  # Initialize weights between 0 and 1
-        self.relu = nn.ReLU(inplace = False)  # Ensure non-negative weights
+        # self.relu = nn.ReLU(inplace = False)  # Ensure non-negative weights
         
         self.epsilon = 0.0001
 
@@ -70,7 +70,9 @@ class BiFPN_Concat2(nn.Module):
         # w = self.w
 
         # Apply ReLU to ensure non-negative weights, then normalize
-        w = self.relu(self.w)
+        import torch.nn.functional as F
+        w = F.relu(self.w, inplace=False)
+        # w = self.relu(self.w)
         weight = w / (torch.sum(w, dim=0) + self.epsilon)
         # Fast normalized fusion
         # x = [weight[0] * x[0], weight[1] * x[1]]
@@ -87,12 +89,14 @@ class BiFPN_Concat3(nn.Module):
         # Initialize weights with uniform distribution for better convergence
         self.w = nn.Parameter(torch.empty(3, dtype=torch.float32))
         nn.init.uniform_(self.w, 0, 1)  # Initialize weights between 0 and 1
-        self.relu = nn.ReLU(inplace = False)  # Ensure non-negative weights
+        # self.relu = nn.ReLU(inplace = False)  # Ensure non-negative weights
         self.epsilon = 0.0001
 
     def forward(self, x):
         # w = self.w
-        w = self.relu(self.w)
+        import torch.nn.functional as F
+        w = F.relu(self.w, inplace=False)
+        # w = self.relu(self.w)
         weight = w / (torch.sum(w, dim=0) + self.epsilon)
         # Fast normalized fusion
         # x = [weight[0] * x[0], weight[1] * x[1], weight[2] * x[2]]
