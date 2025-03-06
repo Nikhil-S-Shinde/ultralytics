@@ -62,7 +62,7 @@ class BiFPN_Concat2(nn.Module):
         # Initialize weights with uniform distribution for better convergence
         self.w = nn.Parameter(torch.empty(2, dtype=torch.float32))
         nn.init.uniform_(self.w, 0, 1)  # Initialize weights between 0 and 1
-        self.relu = nn.ReLU()  # Ensure non-negative weights
+        self.relu = nn.ReLU(inplace = False)  # Ensure non-negative weights
         
         self.epsilon = 0.0001
 
@@ -87,7 +87,7 @@ class BiFPN_Concat3(nn.Module):
         # Initialize weights with uniform distribution for better convergence
         self.w = nn.Parameter(torch.empty(3, dtype=torch.float32))
         nn.init.uniform_(self.w, 0, 1)  # Initialize weights between 0 and 1
-        self.relu = nn.ReLU()  # Ensure non-negative weights
+        self.relu = nn.ReLU(inplace = False)  # Ensure non-negative weights
         self.epsilon = 0.0001
 
     def forward(self, x):
