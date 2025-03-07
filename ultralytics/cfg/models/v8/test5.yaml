@@ -22,6 +22,8 @@ backbone:
   - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]] #7 (1, 768, 20, 20) (256)
   # - [-1, 1, EMA, [768]] #8 multiscale 3
   - [-1, 1, EMA, [192]] #8 multiscale 3
+  - [5, 1, EMA, [192]] #8 multiscale 3
+  - [3, 1, EMA, [192]] #8 multiscale 3
   # CNN
   - [0, 1, DWConv, [64, 3, 2]] # (1, 64, 320, 320) 9 (24)
   - [-1, 1, DWConv, [128, 3, 2]] # (1, 128, 160, 160) 10 (48)
