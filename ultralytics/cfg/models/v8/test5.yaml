@@ -58,9 +58,9 @@ backbone:
 # YOLOv8.0n head
 head:
   # - [-1, 1, nn.Identity, []]
-  - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #23
-  - [[-1, 20], 1, Concat, [1]] # 24
-  - [-1, 3, DWC3k2, [512]] # 25
+  # - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #23
+  # - [[-1, 20], 1, Concat, [1]] # 24
+  # - [-1, 3, DWC3k2, [512]] # 25
 
   # - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #26
   # - [[-1, 18], 1, Concat, [1]] # 27
@@ -74,4 +74,4 @@ head:
   # - [[-1, 22], 1, Concat, [1]] # 33
   # - [-1, 3, DWC3k2, [1024, True]] # 34
 
-  - [[25, 25, 25], 1, Detect, [nc]] # 35
+  - [[22, 20, 18], 1, Detect, [nc]] # 35
