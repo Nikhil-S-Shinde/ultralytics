@@ -991,7 +991,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             PSA,
             SCDown,
             C2fCIB,
-            EMA,
+            # EMA,
             DepthwiseConvBlock,
             DWC2f,
             DWBottleneck,
@@ -1092,6 +1092,10 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c2 = args[0]
             c1 = ch[f]
             args = [*args[1:]]
+        elif m is EMA:
+            c1 = ch[f]
+            c2 = args[0]  # Use unscaled channel count
+            args = [c1, c2, *args[1:]]
         else:
             c2 = ch[f]
 
