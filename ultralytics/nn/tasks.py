@@ -1097,7 +1097,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c1 = ch[f]
             c2 = args[0]  # Use unscaled channel count
             args = [c1, c2, *args[1:]]
-        elif m in ECA:
+        elif m is ECA:
             c1 = ch[f]
             # c2 = args[0]
             args = [c1, *args[1:]]
