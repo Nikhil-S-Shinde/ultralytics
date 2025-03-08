@@ -73,6 +73,7 @@ from ultralytics.nn.modules import (
     DWC3k2,
     DWC3k,
     DWBottleneck,
+    ECA,
 
 )
 from ultralytics.nn.modules.conv import BiFPN_Concat2, BiFPN_Concat3, DepthwiseConvBlock
@@ -1096,6 +1097,10 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             c1 = ch[f]
             c2 = args[0]  # Use unscaled channel count
             args = [c1, c2, *args[1:]]
+        elif m in ECA:
+            c1 = ch[f]
+            # c2 = args[0]
+            args = [c1, *args[1:]]
         else:
             c2 = ch[f]
 
