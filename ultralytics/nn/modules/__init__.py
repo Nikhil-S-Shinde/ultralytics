@@ -99,6 +99,7 @@ from .transformer import (
     TransformerEncoderLayer,
     TransformerLayer,
     EMA,
+    ECA,
 )
 
 __all__ = (
@@ -185,4 +186,5 @@ __all__ = (
     "DWC3k2",
     "DWC3k",
     "DWBottleneck",
+    "ECA",
 )
