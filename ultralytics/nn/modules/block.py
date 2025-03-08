@@ -58,6 +58,8 @@ __all__ = (
     "DWC3k2",
     "DWC3k",
     "DWBottleneck",
+    "DWC2f_Attn",
+    "DWC3k2_Attn",
 )
 
 
@@ -281,6 +283,30 @@ class DWC2f(nn.Module):
         y.extend(m(y[-1]) for m in self.m)
         return self.cv2(torch.cat(y, 1))
 
+class DWC2f_Attn(nn.Module):
+    """CSP Bottleneck with 2 convolutions and ECA attention."""
+
+    def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5, bn_momentum=0.1, bn_eps=1e-5):
+        """Initialize CSP bottleneck with 2 convs and ECA attention module."""
+        super().__init__()
+        self.c = int(c2 * e)  # hidden channels
+        self.cv1 = DepthwiseConvBlock(c1=c1, c2=2 * self.c, k=1, s=1, bn_momentum=bn_momentum, bn_eps=bn_eps)
+        self.cv2 = DepthwiseConvBlock(c1=(2 + n) * self.c, c2=c2, k=1, s=1, bn_momentum=bn_momentum, bn_eps=bn_eps)
+        self.m = nn.ModuleList(DWBottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0, bn_momentum=bn_momentum, bn_eps=bn_eps) for _ in range(n))
+        self.attn = ECA(c2)  # Add ECA attention module
+
+    def forward(self, x):
+        """Forward pass through C2fAttn layer."""
+        y = list(self.cv1(x).chunk(2, 1))
+        y.extend(m(y[-1]) for m in self.m)
+        return self.attn(self.cv2(torch.cat(y, 1)))  # Apply attention after conv
+
+    def forward_split(self, x):
+        """Forward pass using split() instead of chunk()."""
+        y = self.cv1(x).split((self.c, self.c), 1)
+        y = [y[0], y[1]]
+        y.extend(m(y[-1]) for m in self.m)
+        return self.attn(self.cv2(torch.cat(y, 1)))  # Apply attention after conv
 
 class C2fGhost(nn.Module):
     """CSP Bottleneck with 2 convolutions with Ghost components."""
@@ -826,6 +852,18 @@ class DWC3k2(DWC2f):
         self.m = nn.ModuleList(
             DWC3k(self.c, self.c, 2, shortcut, g, bn_momentum=bn_momentum, bn_eps=bn_eps) if c3k else DWBottleneck(self.c, self.c, shortcut, g, bn_momentum=bn_momentum, bn_eps=bn_eps) for _ in range(n)
         )
+
+class DWC3k2_Attn(DWC2f_Attn):
+    """Faster Implementation of CSP Bottleneck with 2 convolutions."""
+
+    def __init__(self, c1, c2, n=1, c3k=False, e=0.5, g=1, shortcut=True, bn_momentum=0.1, bn_eps=1e-5):
+        """Initializes the C3k2 module, a faster CSP Bottleneck with 2 convolutions and optional C3k blocks."""
+        super().__init__(c1, c2, n, shortcut, g, e)
+        self.m = nn.ModuleList(
+            DWC3k(self.c, self.c, 2, shortcut, g, bn_momentum=bn_momentum, bn_eps=bn_eps) if c3k else DWBottleneck(self.c, self.c, shortcut, g, bn_momentum=bn_momentum, bn_eps=bn_eps) for _ in range(n)
+        )
+
+
 
 class C3k2Ghost(C2fGhost):
     """Ghost version of C3k2: CSP Bottleneck with 2 convolutions."""
