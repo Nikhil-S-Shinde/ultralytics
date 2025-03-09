@@ -75,9 +75,9 @@ class BiFPN_Concat2(nn.Module):
         # w = self.relu(self.w)
         weight = w / (torch.sum(w, dim=0) + self.epsilon)
         # Fast normalized fusion
-        # x = [weight[0] * x[0], weight[1] * x[1]]
-        # return torch.cat(x, self.d)
-        return weight[0] * x[0] + weight[1] * x[1]
+        x = [weight[0] * x[0], weight[1] * x[1]]
+        return torch.cat(x, self.d)
+        # return weight[0] * x[0] + weight[1] * x[1]
 
 # Three branches concat operation
 class BiFPN_Concat3(nn.Module):
@@ -99,9 +99,9 @@ class BiFPN_Concat3(nn.Module):
         # w = self.relu(self.w)
         weight = w / (torch.sum(w, dim=0) + self.epsilon)
         # Fast normalized fusion
-        # x = [weight[0] * x[0], weight[1] * x[1], weight[2] * x[2]]
-        # return torch.cat(x, self.d)
-        return weight[0] * x[0] + weight[1] * x[1] + weight[2] * x[2]
+        x = [weight[0] * x[0], weight[1] * x[1], weight[2] * x[2]]
+        return torch.cat(x, self.d)
+        # return weight[0] * x[0] + weight[1] * x[1] + weight[2] * x[2]
 
 def autopad(k, p=None, d=1):  # kernel, padding, dilation
     """Pad to 'same' shape outputs."""
