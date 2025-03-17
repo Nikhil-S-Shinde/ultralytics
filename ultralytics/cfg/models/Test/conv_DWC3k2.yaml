@@ -23,15 +23,15 @@ backbone:
 head:
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #11
   - [[-1, 7], 1, Concat, [1]] # 12 1024+512 = 1536
-  - [-1, 2, DWC3k2, [512]] # 13 128
+  - [-1, 2, DWC3k2, [512, False]] # 13 128
 
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]] #14
   - [[-1, 4], 1, Concat, [1]] # 15
-  - [-1, 2, DWC3k2, [256]] # 16
+  - [-1, 2, DWC3k2, [256, False]] # 16
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #17
   - [[-1, 13], 1, Concat, [1]] #18
-  - [-1, 2, DWC3k2, [512, True]] #19
+  - [-1, 2, DWC3k2, [512, False]] #19
 
   - [-1, 1, nn.Upsample, [None, 0.5, "nearest"]] #20
   - [[-1, 10], 1, Concat, [1]] # 21
