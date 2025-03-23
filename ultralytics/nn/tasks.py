@@ -76,6 +76,7 @@ from ultralytics.nn.modules import (
     ECA,
     DWC2f_Attn,
     DWC3k2_Attn,
+    ScaledConcat,
 
 )
 from ultralytics.nn.modules.conv import BiFPN_Concat2, BiFPN_Concat3, DepthwiseConvBlock
@@ -1007,6 +1008,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             DWBottleneck,
             DWC2f_Attn,
             DWC3k2_Attn,
+            ScaledConcat,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1053,6 +1055,8 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             if m is C2fAttn:  # set 1) embed channels and 2) num heads
                 args[1] = make_divisible(min(args[1], max_channels // 2) * width, 8)
                 args[2] = int(max(round(min(args[2], max_channels // 2 // 32)) * width, 1) if args[2] > 1 else args[2])
+            if m is ScaledConcat:
+                c2 = sum(ch[x] for x in f)
     
             args = [c1, c2, *args[1:]]
             if m in repeat_modules:
