@@ -87,6 +87,7 @@ from .conv import (
     BiFPN_Concat2,
     BiFPN_Concat3,
     DepthwiseConvBlock,
+    ScaledConcat,
 )
 from .head import OBB, Classify, Detect, Pose, RTDETRDecoder, Segment, WorldDetect, v10Detect
 from .transformer import (
@@ -191,4 +192,5 @@ __all__ = (
     "ECA",
     "DWC2f_Attn",
     "DWC3k2_Attn",
+    "ScaledConcat",
 )
