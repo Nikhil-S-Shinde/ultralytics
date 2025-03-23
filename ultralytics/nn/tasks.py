@@ -1008,7 +1008,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             DWBottleneck,
             DWC2f_Attn,
             DWC3k2_Attn,
-            ScaledConcat,
+            # ScaledConcat,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1055,8 +1055,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             if m is C2fAttn:  # set 1) embed channels and 2) num heads
                 args[1] = make_divisible(min(args[1], max_channels // 2) * width, 8)
                 args[2] = int(max(round(min(args[2], max_channels // 2 // 32)) * width, 1) if args[2] > 1 else args[2])
-            if m is ScaledConcat:
-                c2 = sum(ch[x] for x in f)
     
             args = [c1, c2, *args[1:]]
             if m in repeat_modules:
@@ -1080,6 +1078,15 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+        elif m is ScaledConcat:
+            # First calculate the concatenated channels
+            c2 = sum(ch[x] for x in f)
+            # Apply scaling based on the scale parameter
+            if scales:
+                scale_factor = scales.get('s', [1.0, 1.0, 1.0])[0]  # Get first scaling factor
+                c2 = int(c2 * scale_factor)  # Scale the channel dimension
+            if verbose:
+                LOGGER.info(f"Scaling ScaledConcat output from {sum(ch[x] for x in f)} to {c2} channels")
         #Add bifpn_concat structure
         elif m in [Concat, BiFPN_Concat2, BiFPN_Concat3]:
             c2 = sum(ch[x] for x in f)
