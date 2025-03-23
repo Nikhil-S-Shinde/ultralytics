@@ -25,6 +25,7 @@ __all__ = (
     "BiFPN_Concat2",
     "BiFPN_Concat3",
     "DepthwiseConvBlock",
+    "ScaledConcat",
 )
 
 class DepthwiseConvBlock(nn.Module):
@@ -410,6 +411,18 @@ class Concat(nn.Module):
         """Forward pass for the YOLOv8 mask Proto module."""
         return torch.cat(x, self.d)
 
+
+class ScaledConcat(nn.Module):
+    """Concatenate a list of tensors along dimension."""
+
+    def __init__(self, dimension=1):
+        """Concatenates a list of tensors along a specified dimension."""
+        super().__init__()
+        self.d = dimension
+
+    def forward(self, x):
+        """Forward pass for the YOLOv8 mask Proto module."""
+        return torch.cat(x, self.d)
 
 class Index(nn.Module):
     """Returns a particular index of the input."""
