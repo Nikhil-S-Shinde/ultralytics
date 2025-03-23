@@ -1078,15 +1078,19 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
+
         elif m is ScaledConcat:
-            # First calculate the concatenated channels
+            # Calculate the concatenated channels
             c2 = sum(ch[x] for x in f)
-            # Apply scaling based on the scale parameter
+            # Apply width scaling and make divisible by 8
             if scales:
-                scale_factor = scales.get('s', [1.0, 1.0, 1.0])[0]  # Get first scaling factor
-                c2 = int(c2 * scale_factor)  # Scale the channel dimension
-            if verbose:
+                width = scales.get('s', [1.0, 1.0, 1.0])[1]  # Get width multiplier (second value)
+                max_channels = scales.get('s', [1.0, 1.0, float('inf')])[2]  # Get max channels
+                c2 = make_divisible(min(c2, max_channels) * width, 8)
+        
+                if verbose:
                 LOGGER.info(f"Scaling ScaledConcat output from {sum(ch[x] for x in f)} to {c2} channels")
+        
         #Add bifpn_concat structure
         elif m in [Concat, BiFPN_Concat2, BiFPN_Concat3]:
             c2 = sum(ch[x] for x in f)
