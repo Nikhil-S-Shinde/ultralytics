@@ -1089,7 +1089,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
         
                 if verbose:
-                LOGGER.info(f"Scaling ScaledConcat output from {sum(ch[x] for x in f)} to {c2} channels")
+                    LOGGER.info(f"Scaling ScaledConcat output from {sum(ch[x] for x in f)} to {c2} channels")
         
         #Add bifpn_concat structure
         elif m in [Concat, BiFPN_Concat2, BiFPN_Concat3]:
