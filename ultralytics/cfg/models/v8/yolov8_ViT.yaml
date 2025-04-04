@@ -24,7 +24,7 @@ backbone:
 
 head:
   # [from, repeats, module, args]
-  -   - [-1, 1, nn.Identity, []]
+  - [-1, 1, nn.Identity, []]
 
   # # --- FPN (Top-Down) Pathway ---
   # - [-1, 1, nn.Upsample, [None, 2, "nearest"]]                       # 8 - (B, 768, 40, 40)
