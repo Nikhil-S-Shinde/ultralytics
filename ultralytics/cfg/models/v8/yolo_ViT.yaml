@@ -1,5 +1,5 @@
 nc: 1
 backbone:
-  - [-1, 1, TorchVision, [256, "alexnet", "DEFAULT", True, 1, True]]
+  - [-1, 1, TorchVision, [256, "alexnet", "DEFAULT", True, 0, True]]
 head:
   - [-1, 1, nn.Identity, []]
