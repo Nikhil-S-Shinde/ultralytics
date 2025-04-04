@@ -12,7 +12,8 @@ scales:
 # YOLOv8-Swin-T Backbone
 backbone:
   # [from, repeats, module, args]
-  - [-1, 1, TorchVision, [768, vit_b_16, DEFAULT, True, 5, True]]    # 0 - Swin-T (truncated, split)
+  # - [-1, 1, TorchVision, [768, vit_b_16, DEFAULT, True, 5, True]]    # 0 - Swin-T (truncated, split)
+  - [-1, 1, TorchVision, [768, "convnext_tiny", "DEFAULT", True, 2, False]]
   # Extract feature maps at different scales
   # - [0, 1, Index, [192, 4]]                                        # 1 - P3/8  (B, 80, 80, 192)
   # - [-1, 1, torchvision.ops.Permute, [[0, 3, 1, 2]]]                               # 2 - P3/8  (B, 192, 80, 80)
