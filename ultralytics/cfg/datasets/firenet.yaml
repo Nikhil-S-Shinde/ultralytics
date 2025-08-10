@@ -4,5 +4,5 @@ train: images
 val: images
 test: images
 
-nc: 1
-names: ['fire']
+names:
+    1: fire
