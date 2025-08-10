@@ -1,0 +1,5 @@
+path: /kaggle/input/firenet-yolo-format/FireNet/fire-dataset/data
+test: images
+
+nc: 1
+names: ['fire']
