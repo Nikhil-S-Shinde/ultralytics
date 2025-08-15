@@ -1,0 +1,9 @@
+path: /kaggle/input/indoor-fire-and-smoke-remapped/Indoor Fire Smoke.v2-v1.yolov11 #root dir
+#path: /kaggle/working/data #root dir
+train: train/images
+val: valid/images
+test: test/images
+
+names:
+    0: smoke
+    1: fire
