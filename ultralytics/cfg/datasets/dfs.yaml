@@ -1,6 +1,6 @@
 path: /kaggle/input/dfs-remapped/DFS-Fire.v4i.yolov11 #root dir
 #path: /kaggle/working/data #root dir
-train: valid/images
+train: test/images
 val: valid/images
 test: test/images
 
